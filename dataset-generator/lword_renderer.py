@@ -78,7 +78,7 @@ class LWordRenderer:
 
         return not doubled_lines
 
-    def render(self, lword: str, angle: float, distance: float, rescale: bool, padding: float = 0.9) -> Image:
+    def render(self, lword: str, angle: float, distance: float, rescale: bool, padding: float = 0.95) -> Image:
         scale = 1
         offset_x, extra_offset_x = 0, 0
         offset_y, extra_offset_y = 0, 0
@@ -88,7 +88,7 @@ class LWordRenderer:
 
             scale_x = self.__width / (bounding_box.xmax - bounding_box.xmin)
             scale_y = self.__height / (bounding_box.ymax - bounding_box.ymin)
-            scale = min(scale_x, scale_y)
+            scale = min(scale_x, scale_y) * padding
 
             offset_x = bounding_box.xmin
             offset_y = bounding_box.ymin
@@ -107,13 +107,6 @@ class LWordRenderer:
         y = self.__height
         direction = -math.pi
         state_stack = []
-
-        draw.rectangle([(bounding_box.xmin, bounding_box.ymin), (bounding_box.xmax, bounding_box.ymax)],
-                       outline='black')
-        draw.rectangle([apply_rescale((bounding_box.xmin, bounding_box.ymin), scale, offset_x, offset_y,
-                                      extra_offset_x, extra_offset_y),
-                        apply_rescale((bounding_box.xmax, bounding_box.ymax), scale, offset_x, offset_y,
-                                      extra_offset_x, extra_offset_y)], outline='black')
 
         for symbol in lword:
             if symbol == "F":
