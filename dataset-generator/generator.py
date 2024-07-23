@@ -36,7 +36,7 @@ class DatasetGenerator:
         self.__renderer = LWordRenderer(512, 512)
         self.__preprocessor = LwordPreprocessor
 
-    def generate(self, size: int, split: tuple[float, float, float], path: str):
+    def generate(self, size: int, split: tuple[float, float, float], path: str) -> str | None:
         timestamp = time.strftime("%d_%m_%Y_%H_%M")
         timestamp_path = f"{path}_{size}__{timestamp}"
 
@@ -91,3 +91,5 @@ class DatasetGenerator:
         train_data.to_csv(os.path.join(train_path, 'captions.csv'), index=False, header=False)
         valid_data.to_csv(os.path.join(valid_path, 'captions.csv'), index=False, header=False)
         test_data.to_csv(os.path.join(test_path, 'captions.csv'), index=False, header=False)
+
+        return timestamp_path

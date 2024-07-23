@@ -21,7 +21,9 @@ def main(args):
         (args.angle_min, args.angle_max),
         (args.it_min, args.it_max)
     )
-    dataset_generator.generate(args.size, (args.train_size, args.valid_size, args.test_size), args.path)
+    path = dataset_generator.generate(args.size, (args.train_size, args.valid_size, args.test_size), args.path)
+
+    print(f"Generated and saved the dataset to {path}")
 
 
 if __name__ == '__main__':
