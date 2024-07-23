@@ -6,6 +6,7 @@ class LSystem:
         self.__axiom = axiom
         self.__rules = {}
         self.__stochastic = stochastic
+        self.__graphical_symbols = {"F", "+", "-", "[", "]"}
 
         for rule in rules:
             if stochastic:
@@ -28,7 +29,10 @@ class LSystem:
         replacements, probabilities = zip(*self.__rules[symbol])
         return random.choices(replacements, weights=probabilities, k=1)[0]
 
-    def generate(self, num_iterations: int) -> str:
+    def __clean_lword(self, lword: str):
+        return "".join(symbol for symbol in lword if symbol in self.__graphical_symbols)
+
+    def generate(self, num_iterations: int, clean_lword: bool) -> str:
         result = self.__axiom
 
         for _ in range(num_iterations):
@@ -37,4 +41,4 @@ class LSystem:
             else:
                 result = "".join(self.__rules.get(symbol, symbol) for symbol in result)
 
-        return result
+        return self.__clean_lword(result) if clean_lword else result
