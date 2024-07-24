@@ -9,7 +9,7 @@ from vocabulary import Vocabulary
 
 
 class LSystemDataset(Dataset):
-    def __init__(self, dataset_type, root_dir, transform=None):
+    def __init__(self, dataset_type, root_dir, vocabulary: Vocabulary, transform=None):
         path = root_dir
 
         if dataset_type == 'train':
@@ -20,7 +20,7 @@ class LSystemDataset(Dataset):
             path = os.path.join(path, 'test')
 
         self.__root_dir = path
-        self.__vocabulary = Vocabulary()
+        self.__vocabulary = vocabulary
         self.__transform = transform
         self.__captions = pd.read_csv(os.path.join(path, 'captions.csv'), header=None, names=['lword', 'image'])
 
