@@ -1,9 +1,11 @@
-import torch.nn.utils.rnn
+# import torch.nn.utils.rnn
 from torchvision import transforms
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 import lsystem_dataloaders
 from vocabulary import Vocabulary
+from model import EncoderCNN, DecoderRNN
+import utils
 
 transform = transforms.Compose([
     transforms.ToTensor(),
@@ -24,14 +26,20 @@ print(len(dataloader), len(vocabulary))
 images, targets, lengths = next(iter(dataloader))
 print(images.shape, targets.shape, len(lengths))
 
-plt.imshow(images[0].squeeze(), cmap='gray')
-plt.show()
-print(targets[0])
+# plt.imshow(images[0].squeeze(), cmap='gray')
+# plt.show()
+# print(targets[0])
+#
+# print(targets)
+#
+# pack = torch.nn.utils.rnn.pack_padded_sequence(targets, lengths, batch_first=True)
+# print(pack)
+#
+# embed = torch.nn.Embedding(len(vocabulary), 10)
+# print(embed(pack[0]))
 
-print(targets)
+encoder = EncoderCNN(feature_size=128)
+decoder = DecoderRNN(embed_size=256, hidden_size=128, vocab_size=len(vocabulary), max_sequence_length=50)
 
-pack = torch.nn.utils.rnn.pack_padded_sequence(targets, lengths, batch_first=True)
-print(pack)
-
-embed = torch.nn.Embedding(len(vocabulary), 10)
-print(embed(pack[0]))
+utils.count_parameters(encoder)
+utils.count_parameters(decoder)
