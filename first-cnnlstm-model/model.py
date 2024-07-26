@@ -11,7 +11,7 @@ class EncoderCNN(nn.Module):
         self.conv1 = nn.Conv2d(1, 16, kernel_size=5, stride=2)
         self.conv2 = nn.Conv2d(16, 32, kernel_size=5, stride=2)
         self.conv3 = nn.Conv2d(32, 64, kernel_size=5, stride=2)
-        # self.conv1 = nn.Conv2d(1, 16, kernel_size=3, stride=2, dilation=2)
+        # self.conv1 = nn.Conv2d(1, 16, kernel_size=3, stride=2, dilation=2)  # investigate, also batch norm, dropout
         # self.conv2 = nn.Conv2d(16, 32, kernel_size=3, stride=2, dilation=2)
         # self.conv3 = nn.Conv2d(32, 64, kernel_size=3, stride=2, dilation=2)
 
@@ -32,7 +32,7 @@ class EncoderCNN(nn.Module):
 
 
 class DecoderRNN(nn.Module):
-    def __init__(self, embed_size, hidden_size, vocab_size, max_sequence_length):  # TODO: set a default maximum
+    def __init__(self, embed_size, hidden_size, vocab_size, max_sequence_length):
         super(DecoderRNN, self).__init__()
 
         self.embed = nn.Embedding(vocab_size, embed_size)

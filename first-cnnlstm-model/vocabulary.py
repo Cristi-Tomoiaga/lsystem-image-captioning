@@ -44,10 +44,22 @@ class Vocabulary:
     def __len__(self):
         return len(self.__token2idx)
 
-    def convert_lword(self, lword):
+    def convert_from_lword(self, lword):
         tokens = self.__tokenizer(lword)
 
         return [self("<bos>")] + [self(token) for token in tokens] + [self("<eos>")]
+
+    def convert_to_lword(self, tokens_idx):
+        tokens = []
+
+        for token_idx in tokens_idx:
+            token = self.__idx2token[token_idx]
+            tokens.append(token)
+
+            if token == "<eos>":
+                break
+
+        return "".join(tokens)
 
 
 def main(args):

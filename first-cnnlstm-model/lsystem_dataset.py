@@ -35,6 +35,6 @@ class LSystemDataset(Dataset):
         if self.__transform is not None:
             image = self.__transform(image)
 
-        target = self.__vocabulary.convert_lword(lword)
+        target = self.__vocabulary.convert_from_lword(lword)
 
         return image, torch.Tensor(target)
