@@ -20,7 +20,7 @@ class EncoderCNN(nn.Module):
         self.max_pool3 = nn.MaxPool2d(kernel_size=2, stride=2)
 
         self.flatten = nn.Flatten()
-        self.linear = nn.Linear(64 * 7, feature_size)
+        self.linear = nn.Linear(64 * 7 * 7, feature_size)
 
     def forward(self, images):
         c1 = self.max_pool1(F.relu(self.conv1(images)))  # (batch_size, 16, 127, 127)

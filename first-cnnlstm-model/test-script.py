@@ -21,10 +21,16 @@ dataloader = lsystem_dataloaders.get_train_loader(
     num_workers=4
 )
 
+print(utils.compute_mean_std_for_dataset("train", "../generated_datasets/lsystem_dataset_20__23_07_2024_23_37"))
+print(utils.compute_max_sequence_length_for_dataset("train", "../generated_datasets/lsystem_dataset_20__23_07_2024_23_37"))
+
 print(len(dataloader), len(vocabulary))
 
 images, targets, lengths = next(iter(dataloader))
 print(images.shape, targets.shape, len(lengths))
+
+print(targets[-1])
+print(vocabulary.convert_to_lword(targets[-1].numpy()))
 
 # plt.imshow(images[0].squeeze(), cmap='gray')
 # plt.show()

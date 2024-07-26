@@ -1,5 +1,21 @@
+import torch.optim
+# import torch_directml
 from prettytable import PrettyTable
 from torch import nn
+from torch.utils.data import ConcatDataset
+from torchvision import transforms
+
+from lsystem_dataset import LSystemDataset
+from vocabulary import Vocabulary
+
+
+def get_device():
+    # =========================== IMPORTANT: change this when changing computers =======================================
+    # device = torch_directml.device() if torch_directml.is_available() else torch.device('cpu')
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    # ==================================================================================================================
+
+    return device
 
 
 def count_parameters(model: nn.Module):
@@ -18,3 +34,45 @@ def count_parameters(model: nn.Module):
     print(f"Total Trainable Params: {total_params}")
 
     return total_params
+
+
+def save_checkpoint(model_path: str, encoder: nn.Module, decoder: nn.Module, optimizer: torch.optim.Optimizer, epoch: int):
+    checkpoint = {
+        'encoder': encoder.state_dict(),
+        'decoder': decoder.state_dict(),
+        'optimizer': optimizer.state_dict(),
+        'epoch': epoch
+    }
+
+    torch.save(checkpoint, model_path)
+    print(f'Saved checkpoint')
+
+
+def load_checkpoint(model_path: str, move_to_cpu: bool):
+    if move_to_cpu:
+        return torch.load(model_path, map_location='cpu')
+    else:
+        return torch.load(model_path)
+
+
+def compute_mean_std_for_dataset(dataset_type, root_dir):
+    transform = transforms.Compose([transforms.ToTensor()])
+    dataset = LSystemDataset(dataset_type=dataset_type, root_dir=root_dir,
+                             vocabulary=Vocabulary(), transform=transform)
+
+    images = torch.stack([image for image, _ in ConcatDataset([dataset])])  # (dataset_len, 1, 512, 512)
+
+    mean = torch.mean(images, dim=(0, 2, 3))
+    std = torch.std(images, dim=(0, 2, 3))
+
+    return mean, std
+
+
+def compute_max_sequence_length_for_dataset(dataset_type, root_dir):
+    transform = transforms.Compose([transforms.ToTensor()])
+    dataset = LSystemDataset(dataset_type=dataset_type, root_dir=root_dir,
+                             vocabulary=Vocabulary(), transform=transform)
+
+    target_lengths = [len(target) for _, target in ConcatDataset([dataset])]
+
+    return max(target_lengths)
