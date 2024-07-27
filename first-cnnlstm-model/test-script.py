@@ -45,7 +45,7 @@ print(vocabulary.convert_to_lword(targets[-1].numpy()))
 # print(embed(pack[0]))
 
 encoder = EncoderCNN(feature_size=128)
-decoder = DecoderRNN(embed_size=256, hidden_size=128, vocab_size=len(vocabulary), max_sequence_length=50)
+decoder = DecoderRNN(embed_size=256, hidden_size=128, vocab_size=len(vocabulary))
 
 utils.count_parameters(encoder)
 utils.count_parameters(decoder)

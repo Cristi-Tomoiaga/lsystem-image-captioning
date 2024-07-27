@@ -10,7 +10,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torchvision import transforms
 
 import utils
-from lsystem_dataloaders import get_train_loader
+from lsystem_dataloaders import get_train_loader, get_valid_loader
 from model import EncoderCNN, DecoderRNN
 from vocabulary import Vocabulary
 
@@ -44,23 +44,30 @@ def train(args):
         transform=transform,
         vocabulary=vocab,
         batch_size=args.batch_size,
-        num_workers=2,
+        num_workers=args.num_workers,
         shuffle=True
     )
 
-    max_sequence_length = utils.compute_max_sequence_length_for_dataset("train", args.dataset_path)
+    valid_dataloader = get_valid_loader(
+        root_dir=args.dataset_path,
+        transform=transform,
+        vocabulary=vocab,
+        batch_size=args.batch_size,
+        num_workers=args.num_workers,
+        shuffle=False
+    )
 
     encoder = EncoderCNN(feature_size=args.embed_size)
     decoder = DecoderRNN(
         embed_size=args.embed_size,
         hidden_size=args.hidden_size,
         vocab_size=len(vocab),
-        max_sequence_length=max_sequence_length
     )
     encoder = encoder.to(device)
     decoder = decoder.to(device)
 
     loss_fn = nn.CrossEntropyLoss()
+    valid_loss_fn = nn.CrossEntropyLoss(ignore_index=vocab("<pad>"))
     params = list(encoder.parameters()) + list(decoder.parameters())
     optimizer = torch.optim.Adam(params, lr=args.learning_rate)
 
@@ -81,7 +88,10 @@ def train(args):
     for epoch in range(starting_epoch, args.num_epochs):
         running_loss = 0.0
         running_perplexity = 0.0
+        last_loss = 0.0
+        last_perplexity = 0.0
 
+        # Training
         for i, (images, captions, lengths) in enumerate(train_dataloader):
             images = images.to(device)
             captions = captions.to(device)
@@ -101,17 +111,59 @@ def train(args):
             if (i + 1) % args.log_step == 0:
                 avg_loss = running_loss / args.log_step
                 avg_perplexity = running_perplexity / args.log_step
+                last_loss = avg_loss
+                last_perplexity = avg_perplexity
 
                 print(f"Epoch [{epoch+1}/{args.num_epochs}], Step [{i+1}/{total_batches}],"
                       f" Average Loss: {avg_loss:.4f}, Average Perplexity: {avg_perplexity:5.4f}")
-                writer.add_scalar("Average Training Loss", avg_loss, global_step=epoch * total_batches + i)
-                writer.add_scalar("Average Training Perplexity", avg_perplexity, global_step=epoch * total_batches + i)
+                writer.add_scalar("Average Training Loss", avg_loss, global_step=epoch * total_batches + i + 1)
+                writer.add_scalar("Average Training Perplexity", avg_perplexity, global_step=epoch * total_batches + i + 1)
                 writer.flush()
 
                 running_loss = 0.0
                 running_perplexity = 0.0
 
         utils.save_checkpoint(os.path.join(model_path, f"model-{epoch + 1}.pth.tar"), encoder, decoder, optimizer, epoch)
+
+        # Validation
+        encoder.eval()
+        decoder.eval()
+
+        total_valid_batches = len(valid_dataloader)
+        running_valid_loss = 0.0
+        running_valid_perplexity = 0.0  # investigate balancing loss with batch size
+        with torch.no_grad():
+            for i, (images, captions, lengths) in enumerate(valid_dataloader):
+                images = images.to(device)
+                captions = captions.to(device)
+                max_sequence_length = captions.size()[-1]
+
+                features = encoder(images)
+                outputs = decoder.generate_caption(features, max_sequence_length, return_idx=False)
+
+                loss = valid_loss_fn(outputs.view(-1, outputs.size(dim=-1)), captions.view(-1))
+                running_valid_loss += loss.item()
+                running_valid_perplexity += np.exp(loss.item())
+
+        avg_valid_loss = running_valid_loss / total_valid_batches
+        avg_valid_perplexity = running_valid_perplexity / total_valid_batches
+
+        print(f"Validation for Epoch [{epoch+1}/{args.num_epochs}],"
+              f" Average Loss: {avg_valid_loss:.4f}, Average Perplexity: {avg_valid_perplexity:5.4f}")
+        writer.add_scalars(
+            "Average Training Loss vs Average Validation Loss",
+            {'Training': last_loss, 'Validation': avg_valid_loss},
+            global_step=epoch + 1
+        )
+        writer.add_scalars(
+            "Average Training Perplexity vs Average Validation Perplexity",
+            {'Training': last_perplexity, 'Validation': avg_valid_perplexity},
+            global_step=epoch + 1
+        )
+        writer.flush()
+
+        encoder.train()
+        decoder.train()
 
     print('Finished training')
 
@@ -124,7 +176,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataset_path', type=str, default='../generated_datasets/lsystem_dataset_100__23_07_2024_15_47', help='The path of the dataset')
     parser.add_argument('--log_step', type=int, default=1, help='The step size for printing log info')  # 10
 
-    # Model parameters
+    # Model parameters                                                                      Tutorial, Alternative, Paper
     parser.add_argument('--embed_size', type=int, default=128, help='Embedding dimension')  # 256, 256, 256
     parser.add_argument('--hidden_size', type=int, default=256, help='Hidden state dimension')  # 512, 256, 256
 

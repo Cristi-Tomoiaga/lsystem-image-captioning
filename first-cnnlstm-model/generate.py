@@ -35,8 +35,7 @@ def generate(image_path, model_path, embed_size, hidden_size, mean, std, max_seq
     decoder = DecoderRNN(
         embed_size=embed_size,
         hidden_size=hidden_size,
-        vocab_size=len(vocab),
-        max_sequence_length=max_sequence_length
+        vocab_size=len(vocab)
     )
 
     checkpoint = utils.load_checkpoint(model_path, move_to_cpu=True)
@@ -53,7 +52,7 @@ def generate(image_path, model_path, embed_size, hidden_size, mean, std, max_seq
 
     with torch.no_grad():
         features = encoder(image)
-        generated_idx = decoder.generate_caption(features)  # (1, max_sequence_length)
+        generated_idx = decoder.generate_caption(features, max_sequence_length)  # (1, max_sequence_length)
         lword = vocab.convert_to_lword(generated_idx[0].cpu().numpy())  # (max_sequence_length)
 
     return lword
@@ -71,7 +70,7 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--image_path', type=str, required=True, help='Input image path')
-    parser.add_argument('--model_path', type=str, default='../models/run_26_07_2024_13_33/model-5.pth.tar', help='The path to the saved model')
+    parser.add_argument('--model_path', type=str, default='../models/run_27_07_2024_15_01/model-4.pth.tar', help='The path to the saved model')
     parser.add_argument('--mean', type=float, default=0.0, help='The mean value of the dataset')
     parser.add_argument('--std', type=float, default=1.0, help='The standard deviation of the dataset')
     parser.add_argument('--max_sequence_length', type=int, default=60, help='The maximum sequence length of the dataset')

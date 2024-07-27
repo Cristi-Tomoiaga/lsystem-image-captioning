@@ -32,14 +32,12 @@ class EncoderCNN(nn.Module):
 
 
 class DecoderRNN(nn.Module):
-    def __init__(self, embed_size, hidden_size, vocab_size, max_sequence_length):
+    def __init__(self, embed_size, hidden_size, vocab_size):
         super(DecoderRNN, self).__init__()
 
         self.embed = nn.Embedding(vocab_size, embed_size)
         self.lstm = nn.LSTM(embed_size, hidden_size, batch_first=True)
         self.linear = nn.Linear(hidden_size, vocab_size)
-
-        self.__max_sequence_length = max_sequence_length
 
     def forward(self, features, captions, lengths):
         embeddings = self.embed(captions)  # (batch_size, max_target_length, embed_size)
@@ -52,21 +50,21 @@ class DecoderRNN(nn.Module):
 
         return outputs
 
-    def generate_caption(self, features):
+    def generate_caption(self, features, max_sequence_length, return_idx=True):
         generated_idx = []
         inputs = features.unsqueeze(1)  # (batch_size, 1, feature_size)
         states = None
 
-        for _ in range(self.__max_sequence_length):
+        for _ in range(max_sequence_length):
             hiddens, states = self.lstm(inputs, states)  # (batch_size, 1, hidden_size)
             outputs = self.linear(hiddens.squeeze(1))  # (batch_size, vocab_size)
 
             predicted_idx = outputs.argmax(dim=1)  # (batch_size)
-            generated_idx.append(predicted_idx)
+            generated_idx.append(predicted_idx if return_idx else outputs)
 
             inputs = self.embed(predicted_idx)  # (batch_size, embed_size)
             inputs = inputs.unsqueeze(1)  # (batch_size, 1, embed_size)
 
-        generated_idx = torch.stack(generated_idx, dim=1)  # (batch_size, max_sequence_length)
+        generated_idx = torch.stack(generated_idx, dim=1)  # (batch_size, max_sequence_length) or (batch_size, max_sequence_length, vocab_size)
 
         return generated_idx
