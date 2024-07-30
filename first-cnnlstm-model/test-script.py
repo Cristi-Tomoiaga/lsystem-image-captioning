@@ -14,15 +14,20 @@ transform = transforms.Compose([
 vocabulary = Vocabulary()
 
 dataloader = lsystem_dataloaders.get_train_loader(
-    root_dir='../generated_datasets/lsystem_dataset_20__23_07_2024_23_37',
+    root_dir='../generated_datasets/lsystem_dataset_48267__30_07_2024_12_54',
     transform=transform,
     vocabulary=vocabulary,
     batch_size=32,
     num_workers=4
 )
 
-print(utils.compute_mean_std_for_dataset("train", "../generated_datasets/lsystem_dataset_20__23_07_2024_23_37"))
-print(utils.compute_max_sequence_length_for_dataset("train", "../generated_datasets/lsystem_dataset_20__23_07_2024_23_37"))
+# mean, std = utils.compute_mean_std_for_dataset("train", "../generated_datasets/lsystem_dataset_48267__30_07_2024_12_54")
+# max_sequence_length = utils.compute_max_sequence_length_for_dataset("train", "../generated_datasets/lsystem_dataset_48267__30_07_2024_12_54")
+#
+# print("Mean, std: ", mean, std)
+# print("Mean ", mean.item())
+# print("Std ", std.item())
+# print("Max sequence length ", max_sequence_length)
 
 print(len(dataloader), len(vocabulary))
 
@@ -45,7 +50,7 @@ print(vocabulary.convert_to_lword(targets[-1].numpy()))
 # print(embed(pack[0]))
 
 encoder = EncoderCNN(feature_size=128)
-decoder = DecoderRNN(embed_size=256, hidden_size=128, vocab_size=len(vocabulary))
+decoder = DecoderRNN(embed_size=128, hidden_size=256, vocab_size=len(vocabulary))
 
 utils.count_parameters(encoder)
 utils.count_parameters(decoder)

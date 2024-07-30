@@ -70,10 +70,10 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--image_path', type=str, required=True, help='Input image path')
-    parser.add_argument('--model_path', type=str, default='../models/run_27_07_2024_15_01/model-4.pth.tar', help='The path to the saved model')
-    parser.add_argument('--mean', type=float, default=0.0, help='The mean value of the dataset')
-    parser.add_argument('--std', type=float, default=1.0, help='The standard deviation of the dataset')
-    parser.add_argument('--max_sequence_length', type=int, default=60, help='The maximum sequence length of the dataset')
+    parser.add_argument('--model_path', type=str, default='../models/', help='The path to the saved model')
+    parser.add_argument('--mean', type=float, default=0.9964, help='The mean value of the dataset')
+    parser.add_argument('--std', type=float, default=0.0602, help='The standard deviation of the dataset')
+    parser.add_argument('--max_sequence_length', type=int, default=258, help='The maximum sequence length of the dataset')
 
     # Model parameters (same as train.py)
     parser.add_argument('--embed_size', type=int, default=128, help='Embedding dimension')

@@ -30,11 +30,9 @@ def train(args):
         os.makedirs(args.tb_path)
     os.mkdir(runs_path)
 
-    mean, std = utils.compute_mean_std_for_dataset("train", args.dataset_path)
-
     transform = transforms.Compose([  # Investigate RandomCrop, RandomHorizontalFlip, angle changing?
         transforms.ToTensor(),
-        transforms.Normalize((mean.item(),), (std.item(),))
+        transforms.Normalize((args.mean,), (args.std,))
     ])
 
     vocab = Vocabulary()
@@ -173,14 +171,16 @@ if __name__ == '__main__':
     parser.add_argument('--model_path', type=str, default='../models/', help='The path for saving trained models')
     parser.add_argument("--load_path", type=str, default='', help='The path for loading and resuming training')
     parser.add_argument("--tb_path", type=str, default="../runs/", help='The path for saving tensorboard logs')
-    parser.add_argument('--dataset_path', type=str, default='../generated_datasets/lsystem_dataset_100__23_07_2024_15_47', help='The path of the dataset')
-    parser.add_argument('--log_step', type=int, default=1, help='The step size for printing log info')  # 10
+    parser.add_argument('--dataset_path', type=str, default='../generated_datasets/lsystem_dataset_48267__30_07_2024_12_54', help='The path of the dataset')
+    parser.add_argument('--mean', type=float, default=0.9964, help='The mean value of the dataset')
+    parser.add_argument('--std', type=float, default=0.0602, help='The standard deviation of the dataset')
+    parser.add_argument('--log_step', type=int, default=10, help='The step size for printing log info')  # 10
 
     # Model parameters                                                                      Tutorial, Alternative, Paper
     parser.add_argument('--embed_size', type=int, default=128, help='Embedding dimension')  # 256, 256, 256
     parser.add_argument('--hidden_size', type=int, default=256, help='Hidden state dimension')  # 512, 256, 256
 
-    parser.add_argument('--num_epochs', type=int, default=5, help='Number of epochs')  # 5, 100, 495
+    parser.add_argument('--num_epochs', type=int, default=495, help='Number of epochs')  # 5, 100, 495
     parser.add_argument('--batch_size', type=int, default=128, help='Batch size')  # 128, 32
     parser.add_argument('--num_workers', type=int, default=2, help='Number of workers')  # 2, 8
     parser.add_argument('--learning_rate', type=float, default=0.00025, help='Learning rate')  # 0.001, 3e-4, 0.00025

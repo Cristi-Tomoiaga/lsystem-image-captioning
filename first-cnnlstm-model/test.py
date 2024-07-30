@@ -73,10 +73,10 @@ def test(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model_path', type=str, default='../models/run_27_07_2024_15_01/model-4.pth.tar', help='The path to the saved model')
-    parser.add_argument('--dataset_path', type=str, default='../generated_datasets/lsystem_dataset_100__23_07_2024_15_47', help='The path of the dataset')
-    parser.add_argument('--mean', type=float, default=0.0, help='The mean value of the dataset')
-    parser.add_argument('--std', type=float, default=1.0, help='The standard deviation of the dataset')
+    parser.add_argument('--model_path', type=str, default='../models/', help='The path to the saved model')
+    parser.add_argument('--dataset_path', type=str, default='../generated_datasets/lsystem_dataset_48267__30_07_2024_12_54', help='The path of the dataset')
+    parser.add_argument('--mean', type=float, default=0.9964, help='The mean value of the dataset')
+    parser.add_argument('--std', type=float, default=0.0602, help='The standard deviation of the dataset')
 
     # Model parameters (same as train.py)
     parser.add_argument('--embed_size', type=int, default=128, help='Embedding dimension')

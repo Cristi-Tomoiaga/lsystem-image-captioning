@@ -60,10 +60,18 @@ def compute_mean_std_for_dataset(dataset_type, root_dir):
     dataset = LSystemDataset(dataset_type=dataset_type, root_dir=root_dir,
                              vocabulary=Vocabulary(), transform=transform)
 
-    images = torch.stack([image for image, _ in ConcatDataset([dataset])])  # (dataset_len, 1, 512, 512)
+    num_pixels = len(dataset) * 512 * 512
 
-    mean = torch.mean(images, dim=(0, 2, 3))
-    std = torch.std(images, dim=(0, 2, 3))
+    total_sum = 0.0
+    for image, _ in dataset:
+        total_sum += image[0].sum()
+    mean = total_sum / num_pixels
+
+    total_sq_sum = 0.0
+    for image, _ in dataset:
+        total_sq_sum += ((image[0] - mean).pow(2)).sum()
+    # noinspection PyTypeChecker
+    std = torch.sqrt(total_sq_sum / (num_pixels - 1))
 
     return mean, std
 
