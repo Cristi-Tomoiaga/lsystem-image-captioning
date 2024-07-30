@@ -13,6 +13,7 @@ import utils
 from lsystem_dataloaders import get_train_loader, get_valid_loader
 from model import EncoderCNN, DecoderRNN
 from vocabulary import Vocabulary
+from metrics import AverageMetric
 
 
 def train(args):
@@ -82,12 +83,16 @@ def train(args):
     encoder.train()
     decoder.train()
 
+    train_loss = AverageMetric()
+    train_perplexity = AverageMetric()
+
+    valid_loss = AverageMetric()
+    valid_perplexity = AverageMetric()
+
     total_batches = len(train_dataloader)
     for epoch in range(starting_epoch, args.num_epochs):
-        running_loss = 0.0
-        running_perplexity = 0.0
-        last_loss = 0.0
-        last_perplexity = 0.0
+        train_loss.reset()
+        train_perplexity.reset()
 
         # Training
         for i, (images, captions, lengths) in enumerate(train_dataloader):
@@ -104,22 +109,17 @@ def train(args):
             loss.backward()
             optimizer.step()
 
-            running_loss += loss.item()
-            running_perplexity += np.exp(loss.item())
+            train_loss.add_value(loss.item())
+            train_perplexity.add_value(np.exp(loss.item()))
             if (i + 1) % args.log_step == 0:
-                avg_loss = running_loss / args.log_step
-                avg_perplexity = running_perplexity / args.log_step
-                last_loss = avg_loss
-                last_perplexity = avg_perplexity
-
                 print(f"Epoch [{epoch+1}/{args.num_epochs}], Step [{i+1}/{total_batches}],"
-                      f" Average Loss: {avg_loss:.4f}, Average Perplexity: {avg_perplexity:5.4f}")
-                writer.add_scalar("Average Training Loss", avg_loss, global_step=epoch * total_batches + i + 1)
-                writer.add_scalar("Average Training Perplexity", avg_perplexity, global_step=epoch * total_batches + i + 1)
+                      f" Average Loss: {train_loss.average_value:.4f}, Average Perplexity: {train_perplexity.average_value:5.4f}")
+                writer.add_scalar("Average Training Loss", train_loss.average_value, global_step=epoch * total_batches + i + 1)
+                writer.add_scalar("Average Training Perplexity", train_perplexity.average_value, global_step=epoch * total_batches + i + 1)
                 writer.flush()
 
-                running_loss = 0.0
-                running_perplexity = 0.0
+                train_loss.reset()
+                train_perplexity.reset()
 
         utils.save_checkpoint(os.path.join(model_path, f"model-{epoch + 1}.pth.tar"), encoder, decoder, optimizer, epoch)
 
@@ -127,9 +127,8 @@ def train(args):
         encoder.eval()
         decoder.eval()
 
-        total_valid_batches = len(valid_dataloader)
-        running_valid_loss = 0.0
-        running_valid_perplexity = 0.0  # investigate balancing loss with batch size
+        valid_loss.reset()  # investigate balancing loss with batch size
+        valid_perplexity.reset()
         with torch.no_grad():
             for i, (images, captions, lengths) in enumerate(valid_dataloader):
                 images = images.to(device)
@@ -140,22 +139,19 @@ def train(args):
                 outputs = decoder.generate_caption(features, max_sequence_length, return_idx=False)
 
                 loss = valid_loss_fn(outputs.view(-1, outputs.size(dim=-1)), captions.view(-1))
-                running_valid_loss += loss.item()
-                running_valid_perplexity += np.exp(loss.item())
-
-        avg_valid_loss = running_valid_loss / total_valid_batches
-        avg_valid_perplexity = running_valid_perplexity / total_valid_batches
+                valid_loss.add_value(loss.item())
+                valid_perplexity.add_value(np.exp(loss.item()))
 
         print(f"Validation for Epoch [{epoch+1}/{args.num_epochs}],"
-              f" Average Loss: {avg_valid_loss:.4f}, Average Perplexity: {avg_valid_perplexity:5.4f}")
+              f" Average Loss: {valid_loss.average_value:.4f}, Average Perplexity: {valid_perplexity.average_value:5.4f}")
         writer.add_scalars(
             "Average Training Loss vs Average Validation Loss",
-            {'Training': last_loss, 'Validation': avg_valid_loss},
+            {'Training': train_loss.previous_value, 'Validation': valid_loss.average_value},
             global_step=epoch + 1
         )
         writer.add_scalars(
             "Average Training Perplexity vs Average Validation Perplexity",
-            {'Training': last_perplexity, 'Validation': avg_valid_perplexity},
+            {'Training': train_perplexity.previous_value, 'Validation': valid_perplexity.average_value},
             global_step=epoch + 1
         )
         writer.flush()

@@ -9,6 +9,7 @@ import utils
 from vocabulary import Vocabulary
 from model import EncoderCNN, DecoderRNN
 from lsystem_dataloaders import get_test_loader
+from metrics import AverageMetric
 
 
 def test(args):
@@ -48,9 +49,12 @@ def test(args):
 
     test_loss_fn = nn.CrossEntropyLoss(ignore_index=vocab("<pad>"))
 
-    total_test_batches = len(test_dataloader)
-    running_test_loss = 0.0
-    running_test_perplexity = 0.0  # investigate balancing loss with batch size
+    test_loss = AverageMetric()
+    test_perplexity = AverageMetric()
+
+    test_loss.reset()  # investigate balancing loss with batch size
+    test_perplexity.reset()
+
     with torch.no_grad():
         for i, (images, captions, lengths) in enumerate(test_dataloader):
             images = images.to(device)
@@ -61,14 +65,11 @@ def test(args):
             outputs = decoder.generate_caption(features, max_sequence_length, return_idx=False)
 
             loss = test_loss_fn(outputs.view(-1, outputs.size(dim=-1)), captions.view(-1))
-            running_test_loss += loss.item()
-            running_test_perplexity += np.exp(loss.item())
-
-    avg_test_loss = running_test_loss / total_test_batches
-    avg_test_perplexity = running_test_perplexity / total_test_batches
+            test_loss.add_value(loss.item())
+            test_perplexity.add_value(np.exp(loss.item()))
 
     print(f"Test results:"
-          f" Average Loss: {avg_test_loss:.4f}, Average Perplexity: {avg_test_perplexity:5.4f}")
+          f" Average Loss: {test_loss.average_value:.4f}, Average Perplexity: {test_perplexity.average_value:5.4f}")
 
 
 if __name__ == '__main__':
