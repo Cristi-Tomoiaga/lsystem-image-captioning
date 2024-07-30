@@ -17,12 +17,16 @@ def apply_rescale(coords: tuple[float, float], scale: float, offset_x: float, of
     return (coords[0] - offset_x) * scale + extra_offset_x, (coords[1] - offset_y) * scale + extra_offset_y
 
 
+def are_points_close(point1, point2, tol=1e-8):
+    return abs(point1[0] - point2[0]) < tol and abs(point1[1] - point2[1]) < tol
+
+
 class LWordRenderer:
     def __init__(self, width: int, height: int):
         self.__width = width
         self.__height = height
 
-    def __compute_bounding_box(self, lword: str, angle: float, distance: float) -> tuple[BoundingBox, bool]:
+    def __compute_bounding_box(self, lword: str, angle: float, distance: float) -> tuple[BoundingBox, dict]:
         angle = math.radians(angle)
 
         x = self.__width // 2
@@ -35,15 +39,15 @@ class LWordRenderer:
         ymin = math.inf
         ymax = -math.inf
 
-        lines_drawn = set()
-        doubled_lines = False
+        lines_drawn = {}
+        doubled_lines = {}
 
         xmin = min(xmin, x)
         xmax = max(xmax, x)
         ymin = min(ymin, y)
         ymax = max(ymax, y)
 
-        for symbol in lword:
+        for i, symbol in enumerate(lword):
             if symbol == "F":
                 x_new = x + distance * math.sin(direction)
                 y_new = y + distance * math.cos(direction)
@@ -54,11 +58,24 @@ class LWordRenderer:
                 ymax = max(ymax, y_new)
 
                 line = (x, y, x_new, y_new)
-                if line not in lines_drawn:
-                    lines_drawn.add((x, y, x_new, y_new))
-                    lines_drawn.add((x_new, y_new, x, y))
+                reversed_line = (x_new, y_new, x, y)
+                line_exists = any(
+                    are_points_close(line[:2], key[:2]) and are_points_close(line[2:], key[2:]) for key in lines_drawn
+                )
+
+                if not line_exists:
+                    lines_drawn[line] = i
+                    lines_drawn[reversed_line] = i
                 else:
-                    doubled_lines = True
+                    found_index = next(
+                        (lines_drawn[key] for key in lines_drawn if are_points_close(line[:2], key[:2]) and are_points_close(line[2:], key[2:])),
+                        lines_drawn[next(key for key in lines_drawn if are_points_close(reversed_line[:2], key[:2]) and are_points_close(reversed_line[2:], key[2:]))]
+                    )
+
+                    if found_index not in doubled_lines:
+                        doubled_lines[found_index] = []
+
+                    doubled_lines[found_index].append(i)
 
                 x, y = x_new, y_new
             elif symbol == "+":
@@ -72,11 +89,30 @@ class LWordRenderer:
 
         return BoundingBox(xmin, xmax, ymin, ymax), doubled_lines
 
-    def validate_word(self, lword: str, angle: float, distance: float) -> bool:
-        # TODO: implement other validations
+    def validate_lword_geometrically(self, lword: str, angle: float, distance: float) -> dict:
         _, doubled_lines = self.__compute_bounding_box(lword, angle, distance)
 
-        return not doubled_lines
+        return doubled_lines
+
+    def fix_lword_geometrically(self, lword: str, angle: float, distance: float) -> str:
+        result = lword
+        doubled_lines = self.validate_lword_geometrically(result, angle, distance)
+
+        while doubled_lines:
+            new_lword = ""
+            deleted_indices = set()
+
+            for i in doubled_lines:
+                deleted_indices.update(doubled_lines[i])
+
+            for i, symbol in enumerate(result):
+                if i not in deleted_indices:
+                    new_lword += symbol
+
+            result = new_lword
+            doubled_lines = self.validate_lword_geometrically(result, angle, distance)
+
+        return result
 
     def render(self, lword: str, angle: float, distance: float, rescale: bool, padding: float = 0.95) -> Image:
         scale = 1

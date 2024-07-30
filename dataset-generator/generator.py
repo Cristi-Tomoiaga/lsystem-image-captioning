@@ -36,7 +36,7 @@ class DatasetGenerator:
         self.__renderer = LWordRenderer(512, 512)
         self.__preprocessor = LwordPreprocessor
 
-    def generate(self, size: int, split: tuple[float, float, float], path: str) -> str | None:
+    def generate(self, size: int, split: tuple[float, float, float], path: str, log_step: int) -> str | None:
         timestamp = time.strftime("%d_%m_%Y_%H_%M")
         timestamp_path = f"{path}_{size}__{timestamp}"
 
@@ -54,15 +54,20 @@ class DatasetGenerator:
 
         train_indices, valid_indices, test_indices = split_indices(size, split)
 
+        generated = []
         lwords = []
         images = []
-        for i in range(size):
+        i = 0
+        while i < size:
             num_iterations = random.randint(self.__iterations[0], self.__iterations[1])
             angle = random.uniform(self.__angle[0], self.__angle[1])
 
             lword = self.__lsystem.generate(num_iterations, clean_lword=True)
-            if not self.__renderer.validate_word(lword, angle, self.__distance):
-                print(f"Doubled edges detected for image_{i}.png and corresponding l-word")  # TODO
+            lword = self.__renderer.fix_lword_geometrically(lword, angle, self.__distance)
+            lword = self.__preprocessor.process_lword_repeatedly(lword)
+
+            if (lword, angle) in generated:
+                continue
 
             image = self.__renderer.render(lword, angle, self.__distance, rescale=True)
             image_name = f'image_{i}.png'
@@ -76,6 +81,12 @@ class DatasetGenerator:
 
             lwords.append(lword)
             images.append(image_name)
+            generated.append((lword, angle))
+
+            if (i + 1) % log_step == 0:
+                print(f"Generated [{i+1}/{size}] images")
+
+            i += 1
 
         np_lwords = np.array(lwords)
         np_images = np.array(images)

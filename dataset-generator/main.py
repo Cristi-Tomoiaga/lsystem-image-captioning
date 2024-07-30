@@ -6,11 +6,11 @@ from lsystem import LSystem
 
 def main(args):
     lsystem = LSystem(
-        "X",
+        "FX",
         [
-            "X:0.40->F[-X][+X]",
-            "X:0.30->F-X",
-            "X:0.30->F+X",
+            "X:0.34->[-FX][+FX]",
+            "X:0.33->-FX",
+            "X:0.33->+FX",
         ],
         True
     )
@@ -21,14 +21,16 @@ def main(args):
         (args.angle_min, args.angle_max),
         (args.it_min, args.it_max)
     )
-    path = dataset_generator.generate(args.size, (args.train_size, args.valid_size, args.test_size), args.path)
+    path = dataset_generator.generate(args.size, (args.train_size, args.valid_size, args.test_size), args.path, args.log_step)
 
-    print(f"Generated and saved the dataset to {path}")
+    if path is not None:
+        print(f"Generated and saved the dataset to {path}")
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--path', type=str, default='../generated_datasets/lsystem_dataset', help='The path where the dataset is saved')
+    parser.add_argument('--log_step', type=int, default=5000, help='The step size for printing log info')
 
     parser.add_argument('--size', type=int, default=20, help='The size of the dataset')
     parser.add_argument('--train_size', type=float, default=0.9, help='Split percentage for training')
@@ -37,8 +39,8 @@ if __name__ == '__main__':
 
     parser.add_argument('--distance', type=float, default=100, help='Distance used for drawing F')
     parser.add_argument('--angle_min', type=float, default=15, help='Minimum turning angle')
-    parser.add_argument('--angle_max', type=float, default=60, help='Maximum turning angle')
-    parser.add_argument('--it_min', type=int, default=2, help='Minimum number of iterations')
+    parser.add_argument('--angle_max', type=float, default=40, help='Maximum turning angle')  # 60
+    parser.add_argument('--it_min', type=int, default=1, help='Minimum number of iterations')
     parser.add_argument('--it_max', type=int, default=7, help='Maximum number of iterations')
 
     parsed_args = parser.parse_args()
