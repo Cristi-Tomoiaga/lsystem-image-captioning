@@ -6,9 +6,9 @@ from PIL import Image
 import matplotlib.pyplot as plt
 from torchvision import transforms
 
-import utils
-from model import EncoderCNN, DecoderRNN
-from vocabulary import Vocabulary
+import first_cnnlstm_model.utils as utils
+from first_cnnlstm_model.model import EncoderCNN, DecoderRNN
+from first_cnnlstm_model.vocabulary import Vocabulary
 from dataset_generator.lword_renderer import LWordRenderer
 
 

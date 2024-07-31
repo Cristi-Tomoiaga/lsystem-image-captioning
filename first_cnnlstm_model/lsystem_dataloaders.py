@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import DataLoader
 
-from lsystem_dataset import LSystemDataset
+from first_cnnlstm_model.lsystem_dataset import LSystemDataset
 
 
 class LWordCollate:

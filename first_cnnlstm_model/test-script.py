@@ -2,10 +2,10 @@
 from torchvision import transforms
 # import matplotlib.pyplot as plt
 
-import lsystem_dataloaders
-from vocabulary import Vocabulary
-from model import EncoderCNN, DecoderRNN
-import utils
+import first_cnnlstm_model.lsystem_dataloaders as lsystem_dataloaders
+from first_cnnlstm_model.vocabulary import Vocabulary
+from first_cnnlstm_model.model import EncoderCNN, DecoderRNN
+import first_cnnlstm_model.utils as utils
 
 transform = transforms.Compose([
     transforms.ToTensor(),

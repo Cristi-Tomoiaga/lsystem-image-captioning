@@ -1,7 +1,7 @@
 import argparse
 
-from generator import DatasetGenerator
-from lsystem import LSystem
+from dataset_generator.generator import DatasetGenerator
+from dataset_generator.lsystem import LSystem
 
 
 def main(args):

@@ -5,9 +5,9 @@ import time
 import pandas as pd
 import numpy as np
 
-from lsystem import LSystem
-from lword_renderer import LWordRenderer
-from lword_preprocessor import LwordPreprocessor
+from dataset_generator.lsystem import LSystem
+from dataset_generator.lword_renderer import LWordRenderer
+from dataset_generator.lword_preprocessor import LwordPreprocessor
 
 
 def split_indices(size: int, split: tuple[float, float, float]) -> tuple[list[int], list[int], list[int]]:

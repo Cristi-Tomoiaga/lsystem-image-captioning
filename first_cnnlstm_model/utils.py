@@ -5,8 +5,8 @@ from torch import nn
 from torch.utils.data import ConcatDataset
 from torchvision import transforms
 
-from lsystem_dataset import LSystemDataset
-from vocabulary import Vocabulary
+from first_cnnlstm_model.lsystem_dataset import LSystemDataset
+from first_cnnlstm_model.vocabulary import Vocabulary
 
 
 def get_device():

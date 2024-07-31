@@ -5,7 +5,7 @@ from PIL import Image
 from torch.utils.data import Dataset
 import pandas as pd
 
-from vocabulary import Vocabulary
+from first_cnnlstm_model.vocabulary import Vocabulary
 
 
 class LSystemDataset(Dataset):

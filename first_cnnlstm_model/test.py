@@ -5,11 +5,11 @@ import torch
 from torchvision import transforms
 from torch import nn
 
-import utils
-from vocabulary import Vocabulary
-from model import EncoderCNN, DecoderRNN
-from lsystem_dataloaders import get_test_loader
-from metrics import AverageMetric
+import first_cnnlstm_model.utils as utils
+from first_cnnlstm_model.vocabulary import Vocabulary
+from first_cnnlstm_model.model import EncoderCNN, DecoderRNN
+from first_cnnlstm_model.lsystem_dataloaders import get_test_loader
+from first_cnnlstm_model.metrics import AverageMetric
 
 
 def test(args):
