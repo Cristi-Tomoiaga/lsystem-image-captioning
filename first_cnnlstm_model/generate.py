@@ -9,6 +9,7 @@ from torchvision import transforms
 import utils
 from model import EncoderCNN, DecoderRNN
 from vocabulary import Vocabulary
+from dataset_generator.lword_renderer import LWordRenderer
 
 
 def load_image(image_path, transform=None):
@@ -62,8 +63,17 @@ def main(args):
     lword = generate(args.image_path, args.model_path, args.embed_size, args.hidden_size, args.mean, args.std, args.max_sequence_length)
     image = Image.open(args.image_path)
 
-    print(f"Generated lword: {lword}")
+    renderer = LWordRenderer(512, 512)
+    preprocessed_lword = lword.replace("<bos>", "").replace("<eos>", "")
+    generated_image = renderer.render(preprocessed_lword, args.angle, args.distance, rescale=True)
+
     plt.imshow(np.asarray(image), cmap="gray")
+    plt.title("Ground truth image")
+    plt.show()
+
+    print(f"Generated lword: {lword}")
+    plt.imshow(np.asarray(generated_image), cmap="gray")
+    plt.title("Generated image")
     plt.show()
 
 
@@ -73,6 +83,8 @@ if __name__ == '__main__':
     parser.add_argument('--model_path', type=str, default='../models/', help='The path to the saved model')
     parser.add_argument('--mean', type=float, default=0.9964, help='The mean value of the dataset')
     parser.add_argument('--std', type=float, default=0.0602, help='The standard deviation of the dataset')
+    parser.add_argument('--distance', type=float, default=100, help='The distance used for rendering')
+    parser.add_argument('--angle', type=float, default=30, help='The angle used for rendering')
     parser.add_argument('--max_sequence_length', type=int, default=258, help='The maximum sequence length of the dataset')
 
     # Model parameters (same as train.py)
