@@ -21,7 +21,11 @@ def main(args):
         (args.angle_min, args.angle_max),
         (args.it_min, args.it_max)
     )
-    path = dataset_generator.generate(args.size, (args.train_size, args.valid_size, args.test_size), args.path, args.log_step)
+
+    if args.epochs == 0:
+        path = dataset_generator.generate(args.size, (args.train_size, args.valid_size, args.test_size), args.path, args.log_step)
+    else:
+        path = dataset_generator.generate_augmented(args.size, args.epochs, (args.train_size, args.valid_size, args.test_size), args.path, args.log_step)
 
     if path is not None:
         print(f"Generated and saved the dataset to {path}")
@@ -32,7 +36,8 @@ if __name__ == '__main__':
     parser.add_argument('--path', type=str, default='../generated_datasets/lsystem_dataset', help='The path where the dataset is saved')
     parser.add_argument('--log_step', type=int, default=5000, help='The step size for printing log info')
 
-    parser.add_argument('--size', type=int, default=20, help='The size of the dataset')
+    parser.add_argument('--size', type=int, default=20, help='The size of the dataset')  # 48267
+    parser.add_argument('--epochs', type=int, default=0, help='The number of augmentation epochs')  # 495
     parser.add_argument('--train_size', type=float, default=0.9, help='Split percentage for training')
     parser.add_argument('--valid_size', type=float, default=0.05, help='Split percentage for validation')
     parser.add_argument('--test_size', type=float, default=0.05, help='Split percentage for testing')

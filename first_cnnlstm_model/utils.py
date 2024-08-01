@@ -2,7 +2,6 @@ import torch.optim
 # import torch_directml
 from prettytable import PrettyTable
 from torch import nn
-from torch.utils.data import ConcatDataset
 from torchvision import transforms
 
 from first_cnnlstm_model.lsystem_dataset import LSystemDataset
@@ -55,20 +54,23 @@ def load_checkpoint(model_path: str, move_to_cpu: bool):
         return torch.load(model_path)
 
 
-def compute_mean_std_for_dataset(dataset_type, root_dir):
+def compute_mean_std_for_dataset(dataset_type, version, root_dir, epoch=0):
     transform = transforms.Compose([transforms.ToTensor()])
-    dataset = LSystemDataset(dataset_type=dataset_type, root_dir=root_dir,
+    dataset = LSystemDataset(dataset_type=dataset_type, dataset_version=version, root_dir=root_dir,
                              vocabulary=Vocabulary(), transform=transform)
+
+    if version == 2:
+        dataset.set_epoch(epoch)
 
     num_pixels = len(dataset) * 512 * 512
 
     total_sum = 0.0
-    for image, _ in dataset:
+    for image, _, _, _ in dataset:
         total_sum += image[0].sum()
     mean = total_sum / num_pixels
 
     total_sq_sum = 0.0
-    for image, _ in dataset:
+    for image, _, _, _ in dataset:
         total_sq_sum += ((image[0] - mean).pow(2)).sum()
     # noinspection PyTypeChecker
     std = torch.sqrt(total_sq_sum / (num_pixels - 1))
@@ -76,11 +78,19 @@ def compute_mean_std_for_dataset(dataset_type, root_dir):
     return mean, std
 
 
-def compute_max_sequence_length_for_dataset(dataset_type, root_dir):
+def compute_max_sequence_length_for_dataset(dataset_type, version, root_dir, num_epochs=1):
     transform = transforms.Compose([transforms.ToTensor()])
-    dataset = LSystemDataset(dataset_type=dataset_type, root_dir=root_dir,
+    dataset = LSystemDataset(dataset_type=dataset_type, dataset_version=version, root_dir=root_dir,
                              vocabulary=Vocabulary(), transform=transform)
 
-    target_lengths = [len(target) for _, target in ConcatDataset([dataset])]
+    max_sequence_length = 0
+    for epoch in range(num_epochs):
+        if version == 2:
+            dataset.set_epoch(epoch)
 
-    return max(target_lengths)
+        target_lengths = [len(target) for _, target, _, _ in dataset]
+        current_max_sequence_length = max(target_lengths)
+
+        max_sequence_length = max(max_sequence_length, current_max_sequence_length)
+
+    return max_sequence_length

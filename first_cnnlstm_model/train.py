@@ -40,6 +40,7 @@ def train(args):
 
     train_dataloader = get_train_loader(
         root_dir=args.dataset_path,
+        version=args.dataset_version,
         transform=transform,
         vocabulary=vocab,
         batch_size=args.batch_size,
@@ -49,6 +50,7 @@ def train(args):
 
     valid_dataloader = get_valid_loader(
         root_dir=args.dataset_path,
+        version=args.dataset_version,
         transform=transform,
         vocabulary=vocab,
         batch_size=args.batch_size,
@@ -94,8 +96,11 @@ def train(args):
         train_loss.reset()
         train_perplexity.reset()
 
+        if args.dataset_version == 2:
+            train_dataloader.dataset.set_epoch(epoch)
+
         # Training
-        for i, (images, captions, lengths) in enumerate(train_dataloader):
+        for i, (images, captions, lengths, _, _) in enumerate(train_dataloader):
             images = images.to(device)
             captions = captions.to(device)
             targets = pack_padded_sequence(captions, lengths, batch_first=True)[0]
@@ -127,10 +132,13 @@ def train(args):
         encoder.eval()
         decoder.eval()
 
+        if args.dataset_version == 2:
+            valid_dataloader.dataset.set_epoch(epoch)
+
         valid_loss.reset()  # investigate balancing loss with batch size
         valid_perplexity.reset()
         with torch.no_grad():
-            for i, (images, captions, lengths) in enumerate(valid_dataloader):
+            for i, (images, captions, lengths, _, _) in enumerate(valid_dataloader):
                 images = images.to(device)
                 captions = captions.to(device)
                 max_sequence_length = captions.size()[-1]
@@ -167,7 +175,8 @@ if __name__ == '__main__':
     parser.add_argument('--model_path', type=str, default='../models/', help='The path for saving trained models')
     parser.add_argument("--load_path", type=str, default='', help='The path for loading and resuming training')
     parser.add_argument("--tb_path", type=str, default="../runs/", help='The path for saving tensorboard logs')
-    parser.add_argument('--dataset_path', type=str, default='../generated_datasets/lsystem_dataset_48267__30_07_2024_12_54', help='The path of the dataset')
+    parser.add_argument('--dataset_path', type=str, default='../generated_datasets/lsystem_dataset_v2_20__31_07_2024_20_01', help='The path of the dataset')
+    parser.add_argument('--dataset_version', type=int, default=2, help='The format version of the dataset')
     parser.add_argument('--mean', type=float, default=0.9964, help='The mean value of the dataset')
     parser.add_argument('--std', type=float, default=0.0602, help='The standard deviation of the dataset')
     parser.add_argument('--log_step', type=int, default=10, help='The step size for printing log info')  # 10

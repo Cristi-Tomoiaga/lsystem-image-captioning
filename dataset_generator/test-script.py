@@ -1,6 +1,6 @@
 from dataset_generator.lsystem import LSystem
 from dataset_generator.lword_renderer import LWordRenderer
-from dataset_generator.lword_preprocessor import LwordPreprocessor
+from dataset_generator.lword_preprocessor import LWordPreprocessor
 
 width = 512
 height = 512

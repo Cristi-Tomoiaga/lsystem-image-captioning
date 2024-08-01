@@ -6,10 +6,12 @@ from torch.utils.data import Dataset
 import pandas as pd
 
 from first_cnnlstm_model.vocabulary import Vocabulary
+from dataset_generator.lword_renderer import LWordRenderer
+from dataset_generator.lword_preprocessor import LWordPreprocessor
 
 
 class LSystemDataset(Dataset):
-    def __init__(self, dataset_type, root_dir, vocabulary: Vocabulary, transform=None):
+    def __init__(self, dataset_type, dataset_version, root_dir, vocabulary: Vocabulary, transform=None):
         path = root_dir
 
         if dataset_type == 'train':
@@ -19,22 +21,54 @@ class LSystemDataset(Dataset):
         elif dataset_type == 'test':
             path = os.path.join(path, 'test')
 
+        if dataset_version == 2:
+            self.__epoch_data = pd.read_csv(os.path.join(root_dir, 'epoch_data.csv'), header=None, names=['angle', 'distance'])
+            self.__current_epoch = 0
+            self.__renderer = LWordRenderer(512, 512)
+
+        self.__dataset_version = dataset_version
         self.__root_dir = path
         self.__vocabulary = vocabulary
         self.__transform = transform
-        self.__captions = pd.read_csv(os.path.join(path, 'captions.csv'), header=None, names=['lword', 'image'])
+
+        if dataset_version == 1:
+            self.__captions = pd.read_csv(os.path.join(path, 'captions.csv'), header=None, names=['lword', 'image', 'angle', 'distance'])
+        elif dataset_version == 2:
+            self.__captions = pd.read_csv(os.path.join(path, 'captions.csv'), header=None, names=['lword'])
 
     def __len__(self):
         return len(self.__captions)
 
     def __getitem__(self, idx):
-        lword = self.__captions.iloc[idx, 0]
-        image_path = self.__captions.iloc[idx, 1]
+        if self.__dataset_version == 1:
+            lword = self.__captions.iloc[idx, 0]
+            image_path = self.__captions.iloc[idx, 1]
+            angle = self.__captions.iloc[idx, 2]
+            distance = self.__captions.iloc[idx, 3]
 
-        image = Image.open(os.path.join(self.__root_dir, image_path))
-        if self.__transform is not None:
-            image = self.__transform(image)
+            image = Image.open(os.path.join(self.__root_dir, image_path))
+            if self.__transform is not None:
+                image = self.__transform(image)
 
-        target = self.__vocabulary.convert_from_lword(lword)
+            target = self.__vocabulary.convert_from_lword(lword)
 
-        return image, torch.Tensor(target)
+            return image, torch.Tensor(target), torch.Tensor([angle]), torch.Tensor([distance])
+        elif self.__dataset_version == 2:
+            lword = self.__captions.iloc[idx, 0]
+            angle = self.__epoch_data.iloc[self.__current_epoch, 0]
+            distance = self.__epoch_data.iloc[self.__current_epoch, 1]
+
+            lword = self.__renderer.fix_lword_geometrically(lword, angle, distance)
+            lword = LWordPreprocessor.process_lword_repeatedly(lword)
+
+            image = self.__renderer.render(lword, angle, distance, rescale=True)
+            if self.__transform is not None:
+                image = self.__transform(image)
+
+            target = self.__vocabulary.convert_from_lword(lword)
+
+            return image, torch.Tensor(target), torch.Tensor([angle]), torch.Tensor([distance])
+
+    def set_epoch(self, epoch):
+        if self.__dataset_version == 2:
+            self.__current_epoch = epoch

@@ -22,8 +22,12 @@ def test(args):
 
     vocab = Vocabulary()
 
+    dataset_version = 1 if args.epochs == 0 else 2
+    num_epochs = 1 if dataset_version == 1 else args.epochs
+
     test_dataloader = get_test_loader(
         root_dir=args.dataset_path,
+        version=dataset_version,
         transform=transform,
         vocabulary=vocab,
         batch_size=args.batch_size,
@@ -56,17 +60,21 @@ def test(args):
     test_perplexity.reset()
 
     with torch.no_grad():
-        for i, (images, captions, lengths) in enumerate(test_dataloader):
-            images = images.to(device)
-            captions = captions.to(device)
-            max_sequence_length = captions.size()[-1]
+        for epoch in range(num_epochs):
+            if dataset_version == 2:
+                test_dataloader.dataset.set_epoch(epoch)
 
-            features = encoder(images)
-            outputs = decoder.generate_caption(features, max_sequence_length, return_idx=False)
+            for i, (images, captions, lengths, _, _) in enumerate(test_dataloader):
+                images = images.to(device)
+                captions = captions.to(device)
+                max_sequence_length = captions.size()[-1]
 
-            loss = test_loss_fn(outputs.view(-1, outputs.size(dim=-1)), captions.view(-1))
-            test_loss.add_value(loss.item())
-            test_perplexity.add_value(np.exp(loss.item()))
+                features = encoder(images)
+                outputs = decoder.generate_caption(features, max_sequence_length, return_idx=False)
+
+                loss = test_loss_fn(outputs.view(-1, outputs.size(dim=-1)), captions.view(-1))
+                test_loss.add_value(loss.item())
+                test_perplexity.add_value(np.exp(loss.item()))
 
     print(f"Test results:"
           f" Average Loss: {test_loss.average_value:.4f}, Average Perplexity: {test_perplexity.average_value:5.4f}")
@@ -75,7 +83,8 @@ def test(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--model_path', type=str, default='../models/', help='The path to the saved model')
-    parser.add_argument('--dataset_path', type=str, default='../generated_datasets/lsystem_dataset_48267__30_07_2024_12_54', help='The path of the dataset')
+    parser.add_argument('--dataset_path', type=str, default='../generated_datasets/lsystem_dataset_v2_20__31_07_2024_20_01', help='The path of the dataset')
+    parser.add_argument('--epochs', type=int, default=5, help='The number of augmentation epochs')
     parser.add_argument('--mean', type=float, default=0.9964, help='The mean value of the dataset')
     parser.add_argument('--std', type=float, default=0.0602, help='The standard deviation of the dataset')
 

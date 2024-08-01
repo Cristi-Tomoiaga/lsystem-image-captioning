@@ -2,7 +2,7 @@ import re
 from typing import Callable
 
 
-class LwordPreprocessor:
+class LWordPreprocessor:
     @staticmethod
     def check_canceling_rotations(lword: str) -> bool:
         regex = re.compile(r'\+-|-\+')
@@ -90,7 +90,7 @@ class LwordPreprocessor:
 
             return True
 
-        return LwordPreprocessor.__verify_condition_for_branches(lword, ordered_branches_condition)
+        return LWordPreprocessor.__verify_condition_for_branches(lword, ordered_branches_condition)
 
     @staticmethod
     def check_ending_subbranches(lword: str) -> bool:
@@ -100,7 +100,7 @@ class LwordPreprocessor:
 
             return True
 
-        return LwordPreprocessor.__verify_condition_for_branches(lword, ending_subbranches_condition)
+        return LWordPreprocessor.__verify_condition_for_branches(lword, ending_subbranches_condition)
 
     @staticmethod
     def fix_canceling_rotations(lword: str) -> str:
@@ -131,7 +131,7 @@ class LwordPreprocessor:
     @staticmethod
     def __convert_to_lword(nested_list: list | str) -> str:
         if isinstance(nested_list, list):
-            return "[" + "".join(map(LwordPreprocessor.__convert_to_lword, nested_list)) + "]"
+            return "[" + "".join(map(LWordPreprocessor.__convert_to_lword, nested_list)) + "]"
 
         return nested_list
 
@@ -156,10 +156,10 @@ class LwordPreprocessor:
 
             return result, is_empty
 
-        converted_lword = LwordPreprocessor.__convert_to_nested_list(lword)
+        converted_lword = LWordPreprocessor.__convert_to_nested_list(lword)
         converted_lword, _ = helper(converted_lword)
 
-        return LwordPreprocessor.__convert_to_lword(converted_lword)[1:-1]
+        return LWordPreprocessor.__convert_to_lword(converted_lword)[1:-1]
 
     @staticmethod
     def fix_ordered_branches(lword: str) -> str:
@@ -172,7 +172,7 @@ class LwordPreprocessor:
                     branches.append(helper(item))
                 else:
                     if branches:
-                        branches.sort(key=lambda x: LwordPreprocessor.__convert_to_lword(x), reverse=True)
+                        branches.sort(key=lambda x: LWordPreprocessor.__convert_to_lword(x), reverse=True)
                         result.extend(branches)
 
                         branches = []
@@ -180,15 +180,15 @@ class LwordPreprocessor:
                     result.append(item)
 
             if branches:
-                branches.sort(key=lambda x: LwordPreprocessor.__convert_to_lword(x), reverse=True)
+                branches.sort(key=lambda x: LWordPreprocessor.__convert_to_lword(x), reverse=True)
                 result.extend(branches)
 
             return result
 
-        converted_lword = LwordPreprocessor.__convert_to_nested_list(lword)
+        converted_lword = LWordPreprocessor.__convert_to_nested_list(lword)
         converted_lword = helper(converted_lword)
 
-        return LwordPreprocessor.__convert_to_lword(converted_lword)[1:-1]
+        return LWordPreprocessor.__convert_to_lword(converted_lword)[1:-1]
 
     @staticmethod
     def fix_ending_subbranches(lword: str) -> str:
@@ -208,24 +208,24 @@ class LwordPreprocessor:
 
             return result
 
-        converted_lword = LwordPreprocessor.__convert_to_nested_list(lword)
+        converted_lword = LWordPreprocessor.__convert_to_nested_list(lword)
         converted_lword = helper(converted_lword)
 
-        return LwordPreprocessor.__convert_to_lword(converted_lword)[1:-1]
+        return LWordPreprocessor.__convert_to_lword(converted_lword)[1:-1]
 
     @staticmethod
     def process_lword(lword: str) -> str:
-        if not LwordPreprocessor.check_canceling_rotations(lword):
-            lword = LwordPreprocessor.fix_canceling_rotations(lword)
+        if not LWordPreprocessor.check_canceling_rotations(lword):
+            lword = LWordPreprocessor.fix_canceling_rotations(lword)
 
-        if not LwordPreprocessor.check_empty_branches(lword):
-            lword = LwordPreprocessor.fix_empty_branches(lword)
+        if not LWordPreprocessor.check_empty_branches(lword):
+            lword = LWordPreprocessor.fix_empty_branches(lword)
 
-        if not LwordPreprocessor.check_ordered_branches(lword):
-            lword = LwordPreprocessor.fix_ordered_branches(lword)
+        if not LWordPreprocessor.check_ordered_branches(lword):
+            lword = LWordPreprocessor.fix_ordered_branches(lword)
 
-        if not LwordPreprocessor.check_ending_subbranches(lword):
-            lword = LwordPreprocessor.fix_ending_subbranches(lword)
+        if not LWordPreprocessor.check_ending_subbranches(lword):
+            lword = LWordPreprocessor.fix_ending_subbranches(lword)
 
         return lword
 
@@ -236,20 +236,20 @@ class LwordPreprocessor:
         while not done:
             done = True
 
-            if not LwordPreprocessor.check_canceling_rotations(lword):
+            if not LWordPreprocessor.check_canceling_rotations(lword):
                 done = False
-                lword = LwordPreprocessor.fix_canceling_rotations(lword)
+                lword = LWordPreprocessor.fix_canceling_rotations(lword)
 
-            if not LwordPreprocessor.check_empty_branches(lword):
+            if not LWordPreprocessor.check_empty_branches(lword):
                 done = False
-                lword = LwordPreprocessor.fix_empty_branches(lword)
+                lword = LWordPreprocessor.fix_empty_branches(lword)
 
-            if not LwordPreprocessor.check_ordered_branches(lword):
+            if not LWordPreprocessor.check_ordered_branches(lword):
                 done = False
-                lword = LwordPreprocessor.fix_ordered_branches(lword)
+                lword = LWordPreprocessor.fix_ordered_branches(lword)
 
-            if not LwordPreprocessor.check_ending_subbranches(lword):
+            if not LWordPreprocessor.check_ending_subbranches(lword):
                 done = False
-                lword = LwordPreprocessor.fix_ending_subbranches(lword)
+                lword = LWordPreprocessor.fix_ending_subbranches(lword)
 
         return lword
