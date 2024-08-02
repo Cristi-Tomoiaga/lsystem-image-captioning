@@ -76,6 +76,8 @@ def test(args):
                 test_loss.add_value(loss.item())
                 test_perplexity.add_value(np.exp(loss.item()))
 
+            print(f'Test Epoch [{epoch+1}]/[{num_epochs}]')
+
     print(f"Test results:"
           f" Average Loss: {test_loss.average_value:.4f}, Average Perplexity: {test_perplexity.average_value:5.4f}")
 
