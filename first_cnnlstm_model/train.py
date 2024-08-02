@@ -23,15 +23,16 @@ def train(args):
     model_path = os.path.join(args.model_path, f"run_{timestamp}")
     runs_path = os.path.join(args.tb_path, f"run_{timestamp}")
 
-    if not os.path.exists(args.model_path):
-        os.makedirs(args.model_path)
-    os.mkdir(model_path)
+    if args.load_path == '':
+        if not os.path.exists(args.model_path):
+            os.makedirs(args.model_path)
+        os.mkdir(model_path)
 
-    if not os.path.exists(args.tb_path):
-        os.makedirs(args.tb_path)
-    os.mkdir(runs_path)
+        if not os.path.exists(args.tb_path):
+            os.makedirs(args.tb_path)
+        os.mkdir(runs_path)
 
-    transform = transforms.Compose([  # Investigate RandomCrop, RandomHorizontalFlip, angle changing?
+    transform = transforms.Compose([  # Investigate RandomCrop, RandomHorizontalFlip?
         transforms.ToTensor(),
         transforms.Normalize((args.mean,), (args.std,))
     ])
@@ -80,6 +81,10 @@ def train(args):
         decoder.load_state_dict(checkpoint["decoder"])
         optimizer.load_state_dict(checkpoint["optimizer"])
         starting_epoch = checkpoint["epoch"] + 1
+
+        current_run_dir = os.path.basename(os.path.dirname(args.load_path))
+        model_path = str(os.path.join(args.model_path, current_run_dir))
+        runs_path = str(os.path.join(args.tb_path, current_run_dir))
 
     writer = SummaryWriter(runs_path)
     encoder.train()
