@@ -4,6 +4,21 @@ from typing import Callable
 
 class LWordPreprocessor:
     @staticmethod
+    def check_syntax(lword: str) -> bool:
+        count = 0
+
+        for symbol in lword:
+            if symbol == '[':
+                count += 1
+            elif symbol == ']':
+                if count > 0:
+                    count -= 1
+                else:
+                    return False
+
+        return count == 0
+
+    @staticmethod
     def check_canceling_rotations(lword: str) -> bool:
         regex = re.compile(r'\+-|-\+')
 

@@ -10,6 +10,7 @@ from first_cnnlstm_model.vocabulary import Vocabulary
 from first_cnnlstm_model.model import EncoderCNN, DecoderRNN
 from first_cnnlstm_model.lsystem_dataloaders import get_test_loader
 from first_cnnlstm_model.metrics import AverageMetric
+import first_cnnlstm_model.metrics as metrics
 
 
 def test(args):
@@ -55,16 +56,29 @@ def test(args):
 
     test_loss = AverageMetric()
     test_perplexity = AverageMetric()
+    test_bpc = AverageMetric()
+    test_percentage_correct = AverageMetric()
+    test_percentage_false_syntax = AverageMetric()
+    test_percentage_non_terminated = AverageMetric()
+    test_percentage_residue = AverageMetric()
+    test_hausdorff_distance = AverageMetric()
 
     test_loss.reset()  # investigate balancing loss with batch size
     test_perplexity.reset()
+    test_bpc.reset()
+    test_percentage_correct.reset()
+    test_percentage_false_syntax.reset()
+    test_percentage_non_terminated.reset()
+    test_percentage_residue.reset()
+    test_hausdorff_distance.reset()
 
+    total_batches = len(test_dataloader)
     with torch.no_grad():
         for epoch in range(num_epochs):
             if dataset_version == 2:
                 test_dataloader.dataset.set_epoch(epoch)
 
-            for i, (images, captions, lengths, _, _) in enumerate(test_dataloader):
+            for i, (images, captions, lengths, angles, distances) in enumerate(test_dataloader):
                 images = images.to(device)
                 captions = captions.to(device)
                 max_sequence_length = captions.size()[-1]
@@ -75,11 +89,34 @@ def test(args):
                 loss = test_loss_fn(outputs.view(-1, outputs.size(dim=-1)), captions.view(-1))
                 test_loss.add_value(loss.item())
                 test_perplexity.add_value(np.exp(loss.item()))
+                test_bpc.add_value(loss.item()/np.log(2))
 
-            print(f'Test Epoch [{epoch+1}]/[{num_epochs}]')
+                converted_targets = metrics.convert_padded_sequence(captions, vocab('<eos>'), vocabulary=vocab)
+                converted_outputs = metrics.convert_padded_sequence(outputs, vocab('<eos>'), vocabulary=vocab, convert_predictions=True)
+                percentage_correct, percentage_false_syntax, percentage_non_terminated, percentage_residue = metrics.compute_correctness_metrics(converted_outputs, converted_targets, angles, distances)
+                mean_hausdorff_distance = metrics.compute_hausdorff_metric(converted_outputs, converted_targets, angles, distances, normalize=False)
+                test_percentage_correct.add_value(percentage_correct)
+                test_percentage_false_syntax.add_value(percentage_false_syntax)
+                test_percentage_non_terminated.add_value(percentage_non_terminated)
+                test_percentage_residue.add_value(percentage_residue)
+                test_hausdorff_distance.add_value(mean_hausdorff_distance)
+
+                if (i + 1) % args.log_step == 0:
+                    print(f"Test - Epoch [{epoch + 1}/{num_epochs}], Step [{i + 1}/{total_batches}],"
+                          f" Average Loss: {loss.item():.4f}, Average Perplexity: {np.exp(loss.item()):5.4f},"
+                          f" Average BPC: {loss.item()/np.log(2):5.4f},"
+                          f" Average % correct: {percentage_correct:2.2f}, Average % false syntax: {percentage_false_syntax:2.2f},"
+                          f" Average % non-terminated: {percentage_non_terminated:2.2f}, Average % residue: {percentage_residue:2.2f},"
+                          f" Average Hausdorff distance: {mean_hausdorff_distance:5.4f}")
+
+            print(f"Test - Finished Epoch [{epoch + 1}/{num_epochs}]")
 
     print(f"Test results:"
-          f" Average Loss: {test_loss.average_value:.4f}, Average Perplexity: {test_perplexity.average_value:5.4f}")
+          f" Average Loss: {test_loss.average_value:.4f}, Average Perplexity: {test_perplexity.average_value:5.4f},"
+          f" Average BPC: {test_bpc.average_value:5.4f},"
+          f" Average % correct: {test_percentage_correct.average_value:2.2f}, Average % false syntax: {test_percentage_false_syntax.average_value:2.2f},"
+          f" Average % non-terminated: {test_percentage_non_terminated.average_value:2.2f}, Average % residue: {test_percentage_residue.average_value:2.2f},"
+          f" Average Hausdorff distance: {test_hausdorff_distance.average_value:5.4f}")
 
 
 if __name__ == '__main__':
@@ -89,6 +126,7 @@ if __name__ == '__main__':
     parser.add_argument('--epochs', type=int, default=495, help='The number of augmentation epochs')
     parser.add_argument('--mean', type=float, default=0.9947, help='The mean value of the dataset')
     parser.add_argument('--std', type=float, default=0.0730, help='The standard deviation of the dataset')
+    parser.add_argument('--log_step', type=int, default=10, help='The step size for printing log info')  # 10
 
     # Model parameters (same as train.py)
     parser.add_argument('--embed_size', type=int, default=128, help='Embedding dimension')

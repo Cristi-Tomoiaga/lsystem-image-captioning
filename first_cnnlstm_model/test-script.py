@@ -1,13 +1,19 @@
 # import torch.nn.utils.rnn
 # import numpy as np
-# from matplotlib import pyplot as plt
-from torchvision import transforms
+import math
 
-import first_cnnlstm_model.lsystem_dataloaders as lsystem_dataloaders
+import matplotlib.pyplot as plt
+import torch
+from PIL import Image
+from torchvision import transforms
+import torch.nn.utils.rnn as rnn_utils
+
+# import first_cnnlstm_model.lsystem_dataloaders as lsystem_dataloaders
 # from first_cnnlstm_model.lsystem_dataset import LSystemDataset
 from first_cnnlstm_model.vocabulary import Vocabulary
 from first_cnnlstm_model.model import EncoderCNN, DecoderRNN
 import first_cnnlstm_model.utils as utils
+import first_cnnlstm_model.metrics as metrics
 
 transform = transforms.Compose([
     transforms.ToTensor(),
@@ -15,22 +21,22 @@ transform = transforms.Compose([
 
 vocabulary = Vocabulary()
 
-dataloader_v1 = lsystem_dataloaders.get_train_loader(
-    root_dir='../generated_datasets/lsystem_dataset_48267__01_08_2024_15_33',
-    version=1,
-    transform=transform,
-    vocabulary=vocabulary,
-    batch_size=128,
-    num_workers=4
-)
-dataloader_v2 = lsystem_dataloaders.get_train_loader(
-    root_dir='../generated_datasets/lsystem_dataset_v2_48267__01_08_2024_15_55',
-    version=2,
-    transform=transform,
-    vocabulary=vocabulary,
-    batch_size=128,
-    num_workers=4
-)
+# dataloader_v1 = lsystem_dataloaders.get_train_loader(
+#     root_dir='../generated_datasets/lsystem_dataset_48267__01_08_2024_15_33',
+#     version=1,
+#     transform=transform,
+#     vocabulary=vocabulary,
+#     batch_size=128,
+#     num_workers=4
+# )
+# dataloader_v2 = lsystem_dataloaders.get_train_loader(
+#     root_dir='../generated_datasets/lsystem_dataset_v2_48267__01_08_2024_15_55',
+#     version=2,
+#     transform=transform,
+#     vocabulary=vocabulary,
+#     batch_size=128,
+#     num_workers=4
+# )
 
 # mean, std = utils.compute_mean_std_for_dataset("train", 1, "../generated_datasets/lsystem_dataset_48267__01_08_2024_15_33")
 # max_sequence_length = utils.compute_max_sequence_length_for_dataset("train", 1, "../generated_datasets/lsystem_dataset_48267__01_08_2024_15_33")
@@ -65,19 +71,19 @@ dataloader_v2 = lsystem_dataloaders.get_train_loader(
 #
 #     print(epoch)
 
-print(len(dataloader_v1), len(vocabulary))
-
-images, targets, lengths, angles, distances = next(iter(dataloader_v1))
-print(images.shape, targets.shape, len(lengths), angles.shape, distances.shape)
-print(targets[-1])
-print(vocabulary.convert_to_lword(targets[-1].numpy()))
-
-print(len(dataloader_v2), len(vocabulary))
-
-images, targets, lengths, angles, distances = next(iter(dataloader_v2))
-print(images.shape, targets.shape, len(lengths), angles.shape, distances.shape)
-print(targets[-1])
-print(vocabulary.convert_to_lword(targets[-1].numpy()))
+# print(len(dataloader_v1), len(vocabulary))
+#
+# images, targets, lengths, angles, distances = next(iter(dataloader_v1))
+# print(images.shape, targets.shape, len(lengths), angles.shape, distances.shape)
+# print(targets[-1])
+# print(vocabulary.convert_to_lword(targets[-1].numpy()))
+#
+# print(len(dataloader_v2), len(vocabulary))
+#
+# images, targets, lengths, angles, distances = next(iter(dataloader_v2))
+# print(images.shape, targets.shape, len(lengths), angles.shape, distances.shape)
+# print(targets[-1])
+# print(vocabulary.convert_to_lword(targets[-1].numpy()))
 
 # for i, (images, targets, lengths, angles, distances) in enumerate(dataloader_v1):
 #     converted_targets = [vocabulary.convert_to_lword(target.squeeze(0).numpy()) for target in targets.split(1)]
@@ -123,3 +129,38 @@ decoder = DecoderRNN(embed_size=128, hidden_size=256, vocab_size=len(vocabulary)
 
 utils.count_parameters(encoder)
 utils.count_parameters(decoder)
+
+
+sequences = ["F-F+F[+F-F[F]]", "F+F[F-F]"]
+tokens = [torch.tensor(vocabulary.convert_from_lword(sen)) for sen in sequences]
+lens = [len(sen) for sen in tokens]
+
+print(sequences)
+print(tokens, lens)
+
+padded = rnn_utils.pad_sequence(tokens, batch_first=True, padding_value=vocabulary('<pad>'))
+print(padded)
+
+# noinspection PyTypeChecker
+packed = rnn_utils.pack_padded_sequence(padded, lens, batch_first=True)
+print(packed)
+
+print(metrics.convert_padded_sequence(padded, vocabulary('<eos>'), vocabulary=vocabulary))
+print(metrics.convert_packed_padded_sequence(packed[0], lens, vocabulary=vocabulary))
+
+
+image1 = Image.open('../dataset_generator/test4.png')
+image2 = Image.open('../dataset_generator/test4_copy.png').convert('L')
+
+plt.imshow(image1, cmap='gray')
+plt.show()
+plt.imshow(image2, cmap='gray')
+plt.show()
+
+hd = metrics.compute_hausdorff_distance(image1, image2)
+print(hd)
+print(hd / math.sqrt(2 * 512 * 512) * 100)
+print(math.sqrt(2 * 512 * 512))  # image diagonal length
+
+image1.close()
+image2.close()

@@ -14,6 +14,7 @@ from first_cnnlstm_model.lsystem_dataloaders import get_train_loader, get_valid_
 from first_cnnlstm_model.model import EncoderCNN, DecoderRNN
 from first_cnnlstm_model.vocabulary import Vocabulary
 from first_cnnlstm_model.metrics import AverageMetric
+import first_cnnlstm_model.metrics as metrics
 
 
 def train(args):
@@ -92,20 +93,38 @@ def train(args):
 
     train_loss = AverageMetric()
     train_perplexity = AverageMetric()
+    train_bpc = AverageMetric()
+    train_percentage_correct = AverageMetric()
+    train_percentage_false_syntax = AverageMetric()
+    train_percentage_non_terminated = AverageMetric()
+    train_percentage_residue = AverageMetric()
+    train_hausdorff_distance = AverageMetric()
 
     valid_loss = AverageMetric()
     valid_perplexity = AverageMetric()
+    valid_bpc = AverageMetric()
+    valid_percentage_correct = AverageMetric()
+    valid_percentage_false_syntax = AverageMetric()
+    valid_percentage_non_terminated = AverageMetric()
+    valid_percentage_residue = AverageMetric()
+    valid_hausdorff_distance = AverageMetric()
 
     total_batches = len(train_dataloader)
     for epoch in range(starting_epoch, args.num_epochs):
         train_loss.reset()
         train_perplexity.reset()
+        train_bpc.reset()
+        train_percentage_correct.reset()
+        train_percentage_false_syntax.reset()
+        train_percentage_non_terminated.reset()
+        train_percentage_residue.reset()
+        train_hausdorff_distance.reset()
 
         if args.dataset_version == 2:
             train_dataloader.dataset.set_epoch(epoch)
 
         # Training
-        for i, (images, captions, lengths, _, _) in enumerate(train_dataloader):
+        for i, (images, captions, lengths, angles, distances) in enumerate(train_dataloader):
             images = images.to(device)
             captions = captions.to(device)
             targets = pack_padded_sequence(captions, lengths, batch_first=True)[0]
@@ -121,15 +140,43 @@ def train(args):
 
             train_loss.add_value(loss.item())
             train_perplexity.add_value(np.exp(loss.item()))
+            train_bpc.add_value(loss.item()/np.log(2))
+
+            converted_targets = metrics.convert_packed_padded_sequence(targets, lengths, vocabulary=vocab)
+            converted_outputs = metrics.convert_packed_padded_sequence(outputs, lengths, vocabulary=vocab, convert_predictions=True)
+            percentage_correct, percentage_false_syntax, percentage_non_terminated, percentage_residue = metrics.compute_correctness_metrics(converted_outputs, converted_targets, angles, distances)
+            mean_hausdorff_distance = metrics.compute_hausdorff_metric(converted_outputs, converted_targets, angles, distances, normalize=False)
+            train_percentage_correct.add_value(percentage_correct)
+            train_percentage_false_syntax.add_value(percentage_false_syntax)
+            train_percentage_non_terminated.add_value(percentage_non_terminated)
+            train_percentage_residue.add_value(percentage_residue)
+            train_hausdorff_distance.add_value(mean_hausdorff_distance)
+
             if (i + 1) % args.log_step == 0:
                 print(f"Epoch [{epoch+1}/{args.num_epochs}], Step [{i+1}/{total_batches}],"
-                      f" Average Loss: {train_loss.average_value:.4f}, Average Perplexity: {train_perplexity.average_value:5.4f}")
+                      f" Average Loss: {train_loss.average_value:.4f}, Average Perplexity: {train_perplexity.average_value:5.4f},"
+                      f" Average BPC: {train_bpc.average_value:5.4f},"
+                      f" Average % correct: {train_percentage_correct.average_value:2.2f}, Average % false syntax: {train_percentage_false_syntax.average_value:2.2f},"
+                      f" Average % non-terminated: {train_percentage_non_terminated.average_value:2.2f}, Average % residue: {train_percentage_residue.average_value:2.2f},"
+                      f" Average Hausdorff distance: {train_hausdorff_distance.average_value:5.4f}")
                 writer.add_scalar("Average Training Loss", train_loss.average_value, global_step=epoch * total_batches + i + 1)
                 writer.add_scalar("Average Training Perplexity", train_perplexity.average_value, global_step=epoch * total_batches + i + 1)
+                writer.add_scalar("Average Training BPC", train_bpc.average_value, global_step=epoch * total_batches + i + 1)
+                writer.add_scalar("Average Training % correct", train_percentage_correct.average_value, global_step=epoch * total_batches + i + 1)
+                writer.add_scalar("Average Training % false syntax", train_percentage_false_syntax.average_value, global_step=epoch * total_batches + i + 1)
+                writer.add_scalar("Average Training % non-terminated", train_percentage_non_terminated.average_value, global_step=epoch * total_batches + i + 1)
+                writer.add_scalar("Average Training % residue", train_percentage_residue.average_value, global_step=epoch * total_batches + i + 1)
+                writer.add_scalar("Average Training Hausdorff distance", train_hausdorff_distance.average_value, global_step=epoch * total_batches + i + 1)
                 writer.flush()
 
                 train_loss.reset()
                 train_perplexity.reset()
+                train_bpc.reset()
+                train_percentage_correct.reset()
+                train_percentage_false_syntax.reset()
+                train_percentage_non_terminated.reset()
+                train_percentage_residue.reset()
+                train_hausdorff_distance.reset()
 
         utils.save_checkpoint(os.path.join(model_path, f"model-{epoch + 1}.pth.tar"), encoder, decoder, optimizer, epoch)
 
@@ -142,8 +189,15 @@ def train(args):
 
         valid_loss.reset()  # investigate balancing loss with batch size
         valid_perplexity.reset()
+        valid_bpc.reset()
+        valid_percentage_correct.reset()
+        valid_percentage_false_syntax.reset()
+        valid_percentage_non_terminated.reset()
+        valid_percentage_residue.reset()
+        valid_hausdorff_distance.reset()
+
         with torch.no_grad():
-            for i, (images, captions, lengths, _, _) in enumerate(valid_dataloader):
+            for i, (images, captions, lengths, angles, distances) in enumerate(valid_dataloader):
                 images = images.to(device)
                 captions = captions.to(device)
                 max_sequence_length = captions.size()[-1]
@@ -154,9 +208,24 @@ def train(args):
                 loss = valid_loss_fn(outputs.view(-1, outputs.size(dim=-1)), captions.view(-1))
                 valid_loss.add_value(loss.item())
                 valid_perplexity.add_value(np.exp(loss.item()))
+                valid_bpc.add_value(loss.item()/np.log(2))
+
+                converted_targets = metrics.convert_padded_sequence(captions, vocab('<eos>'), vocabulary=vocab)
+                converted_outputs = metrics.convert_padded_sequence(outputs, vocab('<eos>'), vocabulary=vocab, convert_predictions=True)
+                percentage_correct, percentage_false_syntax, percentage_non_terminated, percentage_residue = metrics.compute_correctness_metrics(converted_outputs, converted_targets, angles, distances)
+                mean_hausdorff_distance = metrics.compute_hausdorff_metric(converted_outputs, converted_targets, angles, distances, normalize=False)
+                valid_percentage_correct.add_value(percentage_correct)
+                valid_percentage_false_syntax.add_value(percentage_false_syntax)
+                valid_percentage_non_terminated.add_value(percentage_non_terminated)
+                valid_percentage_residue.add_value(percentage_residue)
+                valid_hausdorff_distance.add_value(mean_hausdorff_distance)
 
         print(f"Validation for Epoch [{epoch+1}/{args.num_epochs}],"
-              f" Average Loss: {valid_loss.average_value:.4f}, Average Perplexity: {valid_perplexity.average_value:5.4f}")
+              f" Average Loss: {valid_loss.average_value:.4f}, Average Perplexity: {valid_perplexity.average_value:5.4f},"
+              f" Average BPC: {valid_bpc.average_value:5.4f},"
+              f" Average % correct: {valid_percentage_correct.average_value:2.2f}, Average % false syntax: {valid_percentage_false_syntax.average_value:2.2f},"
+              f" Average % non-terminated: {valid_percentage_non_terminated.average_value:2.2f}, Average % residue: {valid_percentage_residue.average_value:2.2f},"
+              f" Average Hausdorff distance: {valid_hausdorff_distance.average_value:5.4f}")
         writer.add_scalars(
             "Average Training Loss vs Average Validation Loss",
             {'Training': train_loss.previous_value, 'Validation': valid_loss.average_value},
@@ -165,6 +234,36 @@ def train(args):
         writer.add_scalars(
             "Average Training Perplexity vs Average Validation Perplexity",
             {'Training': train_perplexity.previous_value, 'Validation': valid_perplexity.average_value},
+            global_step=epoch + 1
+        )
+        writer.add_scalars(
+            "Average Training BPC vs Average Validation BPC",
+            {'Training': train_bpc.previous_value, 'Validation': valid_bpc.average_value},
+            global_step=epoch + 1
+        )
+        writer.add_scalars(
+            "Average Training % correct vs Average Validation % correct",
+            {'Training': train_percentage_correct.previous_value, 'Validation': valid_percentage_correct.average_value},
+            global_step=epoch + 1
+        )
+        writer.add_scalars(
+            "Average Training % false syntax vs Average Validation % false syntax",
+            {'Training': train_percentage_false_syntax.previous_value, 'Validation': valid_percentage_false_syntax.average_value},
+            global_step=epoch + 1
+        )
+        writer.add_scalars(
+            "Average Training % non-terminated vs Average Validation % non-terminated",
+            {'Training': train_percentage_non_terminated.previous_value, 'Validation': valid_percentage_non_terminated.average_value},
+            global_step=epoch + 1
+        )
+        writer.add_scalars(
+            "Average Training % residue vs Average Validation % residue",
+            {'Training': train_percentage_residue.previous_value, 'Validation': valid_percentage_residue.average_value},
+            global_step=epoch + 1
+        )
+        writer.add_scalars(
+            "Average Training Hausdorff distance vs Average Validation Hausdorff distance",
+            {'Training': train_hausdorff_distance.previous_value, 'Validation': valid_hausdorff_distance.average_value},
             global_step=epoch + 1
         )
         writer.flush()
