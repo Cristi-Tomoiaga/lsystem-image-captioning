@@ -144,7 +144,7 @@ def train(args):
 
             converted_targets = metrics.convert_packed_padded_sequence(targets, lengths, vocabulary=vocab)
             converted_outputs = metrics.convert_packed_padded_sequence(outputs, lengths, vocabulary=vocab, convert_predictions=True)
-            percentage_correct, percentage_false_syntax, percentage_non_terminated, percentage_residue = metrics.compute_correctness_metrics(converted_outputs, converted_targets, angles, distances)
+            percentage_correct, percentage_false_syntax, percentage_non_terminated, percentage_residue = metrics.compute_correctness_metrics(converted_outputs, converted_targets, angles, distances, strict=True)
             mean_hausdorff_distance = metrics.compute_hausdorff_metric(converted_outputs, converted_targets, angles, distances, normalize=False)
             train_percentage_correct.add_value(percentage_correct)
             train_percentage_false_syntax.add_value(percentage_false_syntax)
@@ -212,7 +212,7 @@ def train(args):
 
                 converted_targets = metrics.convert_padded_sequence(captions, vocab('<eos>'), vocabulary=vocab)
                 converted_outputs = metrics.convert_padded_sequence(outputs, vocab('<eos>'), vocabulary=vocab, convert_predictions=True)
-                percentage_correct, percentage_false_syntax, percentage_non_terminated, percentage_residue = metrics.compute_correctness_metrics(converted_outputs, converted_targets, angles, distances)
+                percentage_correct, percentage_false_syntax, percentage_non_terminated, percentage_residue = metrics.compute_correctness_metrics(converted_outputs, converted_targets, angles, distances, strict=True)
                 mean_hausdorff_distance = metrics.compute_hausdorff_metric(converted_outputs, converted_targets, angles, distances, normalize=False)
                 valid_percentage_correct.add_value(percentage_correct)
                 valid_percentage_false_syntax.add_value(percentage_false_syntax)

@@ -34,27 +34,28 @@ class AverageMetric:
         self.__average_value = self.__running_sum / self.__total
 
 
-def check_lword_syntax(lword, angle, distance):
+def check_lword_syntax(lword, angle, distance, strict):
     lword = lword.replace('<bos>', '').replace('<eos>', '').replace('<pad>', '')
     renderer = LWordRenderer(512, 512)
 
     if not LWordPreprocessor.check_syntax(lword):
         return False
 
-    if not renderer.validate_lword_geometrically(lword, angle, distance):
-        return False
+    if strict:
+        if not renderer.validate_lword_geometrically(lword, angle, distance):
+            return False
 
-    if not LWordPreprocessor.check_canceling_rotations(lword):
-        return False
+        if not LWordPreprocessor.check_canceling_rotations(lword):
+            return False
 
-    if not LWordPreprocessor.check_empty_branches(lword):
-        return False
+        if not LWordPreprocessor.check_empty_branches(lword):
+            return False
 
-    if not LWordPreprocessor.check_ordered_branches(lword):
-        return False
+        if not LWordPreprocessor.check_ordered_branches(lword):
+            return False
 
-    if not LWordPreprocessor.check_ending_subbranches(lword):
-        return False
+        if not LWordPreprocessor.check_ending_subbranches(lword):
+            return False
 
     return True
 
@@ -69,7 +70,7 @@ def compute_hausdorff_distance(output_image, target_image):
     return skimage_metrics.hausdorff_distance(binary_output_image, binary_target_image)
 
 
-def compute_correctness_metrics(outputs, targets, angles, distances):
+def compute_correctness_metrics(outputs, targets, angles, distances, strict=True):
     total = len(targets)
     correct = 0
     false_syntax = 0
@@ -79,7 +80,7 @@ def compute_correctness_metrics(outputs, targets, angles, distances):
     for output, target, angle, distance in zip(outputs, targets, angles, distances):
         if output.find('<eos>') == -1:  # improper <bos> is checked in the residue case
             non_terminated += 1
-        elif not check_lword_syntax(output, angle.item(), distance.item()):
+        elif not check_lword_syntax(output, angle.item(), distance.item(), strict):
             false_syntax += 1
         elif output != target:  # the conversion function cuts terminated words at <eos>, correctly placed <pad>s are left out
             residue += 1
