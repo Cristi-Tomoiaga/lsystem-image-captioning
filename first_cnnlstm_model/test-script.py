@@ -1,19 +1,21 @@
 # import torch.nn.utils.rnn
 # import numpy as np
-import math
+# import math
 
-import matplotlib.pyplot as plt
-import torch
-from PIL import Image
+# import matplotlib.pyplot as plt
+# import torch
+# from PIL import Image
 from torchvision import transforms
-import torch.nn.utils.rnn as rnn_utils
+# import torch.nn.utils.rnn as rnn_utils
 
 # import first_cnnlstm_model.lsystem_dataloaders as lsystem_dataloaders
-# from first_cnnlstm_model.lsystem_dataset import LSystemDataset
-from first_cnnlstm_model.vocabulary import Vocabulary
+from first_cnnlstm_model.lsystem_dataset import LSystemDataset
+from first_cnnlstm_model.vocabulary import Vocabulary, LWordTokenizer
 from first_cnnlstm_model.model import EncoderCNN, DecoderRNN
 import first_cnnlstm_model.utils as utils
 import first_cnnlstm_model.metrics as metrics
+from dataset_generator.lword_renderer import LWordRenderer
+from dataset_generator.lword_preprocessor import LWordPreprocessor
 
 transform = transforms.Compose([
     transforms.ToTensor(),
@@ -131,36 +133,99 @@ utils.count_parameters(encoder)
 utils.count_parameters(decoder)
 
 
-sequences = ["F-F+F[+F-F[F]]", "F+F[F-F]"]
-tokens = [torch.tensor(vocabulary.convert_from_lword(sen)) for sen in sequences]
-lens = [len(sen) for sen in tokens]
+# sequences = ["F-F+F[+F-F[F]]", "F+F[F-F]"]
+# tokens = [torch.tensor(vocabulary.convert_from_lword(sen)) for sen in sequences]
+# lens = [len(sen) for sen in tokens]
+#
+# print(sequences)
+# print(tokens, lens)
+#
+# padded = rnn_utils.pad_sequence(tokens, batch_first=True, padding_value=vocabulary('<pad>'))
+# print(padded)
+#
+# # noinspection PyTypeChecker
+# packed = rnn_utils.pack_padded_sequence(padded, lens, batch_first=True)
+# print(packed)
+#
+# print(metrics.convert_padded_sequence(padded, vocabulary('<eos>'), vocabulary=vocabulary))
+# print(metrics.convert_packed_padded_sequence(packed[0], lens, vocabulary=vocabulary))
+#
+#
+# image1 = Image.open('../dataset_generator/test4.png')
+# image2 = Image.open('../dataset_generator/test4_copy.png').convert('L')
+#
+# plt.imshow(image1, cmap='gray')
+# plt.show()
+# plt.imshow(image2, cmap='gray')
+# plt.show()
+#
+# hd = metrics.compute_hausdorff_distance(image1, image2)
+# print(hd)
+# print(hd / math.sqrt(2 * 512 * 512) * 100)
+# print(math.sqrt(2 * 512 * 512))  # image diagonal length
+#
+# image1.close()
+# image2.close()
 
-print(sequences)
-print(tokens, lens)
+lword = '<bos>F[-F+F+F[-F-F][+F-F]][+F-F[-F[-F+F][+F]][+F-F[-F][+F]]]<eos>'
+angle = 31.97050666809082
+distance = 100.0
+renderer = LWordRenderer(512, 512)
+lword = lword.replace('<bos>', '').replace('<eos>', '')
+print(metrics.check_lword_syntax(lword, angle, distance, strict=True))
 
-padded = rnn_utils.pad_sequence(tokens, batch_first=True, padding_value=vocabulary('<pad>'))
-print(padded)
+print(lword)
+lword = renderer.fix_lword_geometrically(lword.replace('<bos>', '').replace('<eos>', ''), angle, distance)
+print(lword)
+lword = LWordPreprocessor.process_lword_repeatedly(lword)
+print(lword)
 
-# noinspection PyTypeChecker
-packed = rnn_utils.pack_padded_sequence(padded, lens, batch_first=True)
-print(packed)
+print(metrics.check_lword_syntax(lword, angle, distance, strict=True))
+# image = renderer.render(lword, angle, distance, rescale=True)
+# image.save('test.png')
 
-print(metrics.convert_padded_sequence(padded, vocabulary('<eos>'), vocabulary=vocabulary))
-print(metrics.convert_packed_padded_sequence(packed[0], lens, vocabulary=vocabulary))
+# image = renderer.render('F-F[-F[-F[-F[-F-F+F][+F+F-F]][+F+F-F[-F][+F]]][+F+F-F-F+F]][+F[-F-F][+F-F[-F[-F-F][+F+F]][+F+F-F]]]', angle, distance, rescale=True)
+# image.save('test1.png')
+# image = renderer.render('F-F[-F[-F[-F[-F-F+F][+F+F-F]][+F+F-F[-F][+F]]][+F+F-F-F+F]][+F[-F-F++F[-F][+F]][+F-F[-F[-F-F][+F+F]][+F+F-F]]]', angle, distance, rescale=True)
+# image.save('test2.png')
+#
+# image = renderer.render('F[-F+F+F-F-F+F+F][+F-F-F-F[-F-F[-F][+F]][+F[-F-F][+F+F]]]', angle, distance, rescale=True)
+# image.save('test3.png')
+# image = renderer.render('F[-F+F+F-F-F+F+F][+F-F-F[-F[-F-F[-F][+F]][+F[-F-F][+F+F]]][+[-F][+F[-F-F][+F+F]]]]', angle, distance, rescale=True)
+# image.save('test4.png')
+
+dataset_v2 = LSystemDataset("test", 2, "../generated_datasets/lsystem_dataset_v2_48267__01_08_2024_15_55", vocabulary, transform)
+for epoch in range(1):
+    dataset_v2.set_epoch(epoch)
+
+    for image, target, angle, distance in dataset_v2:
+        lword = vocabulary.convert_to_lword(target.long().numpy())
+        lword = lword.replace('<bos>', '').replace('<eos>', '')
+        result = metrics.check_lword_syntax(lword, angle, distance, strict=True)
+
+        if not result:
+            print('Entered')
+            while not metrics.check_lword_syntax(lword, angle, distance, strict=True):
+                lword = renderer.fix_lword_geometrically(lword, angle, distance)
+                lword = LWordPreprocessor.process_lword_repeatedly(lword)
+
+            result2 = metrics.check_lword_syntax(lword, angle, distance, strict=True)
+            if not result2:
+                print('Not')
+            else:
+                print('Fixed')
+
+    print(epoch)
 
 
-image1 = Image.open('../dataset_generator/test4.png')
-image2 = Image.open('../dataset_generator/test4_copy.png').convert('L')
+lword = '<bos>F[-F+F+F[-F-F][+F-F]][+F-F[-F[-F+F+][++F]][+F-F-[[-F][+F]]]]<eos>'.replace('<bos>', '').replace('<eos>', '')
+print(lword)
 
-plt.imshow(image1, cmap='gray')
-plt.show()
-plt.imshow(image2, cmap='gray')
-plt.show()
+tokens = vocabulary.convert_from_lword(lword)
+converted_lword = vocabulary.convert_to_lword(tokens).replace('<bos>', '').replace('<eos>', '')
+print(converted_lword)
 
-hd = metrics.compute_hausdorff_distance(image1, image2)
-print(hd)
-print(hd / math.sqrt(2 * 512 * 512) * 100)
-print(math.sqrt(2 * 512 * 512))  # image diagonal length
-
-image1.close()
-image2.close()
+tokenizer = LWordTokenizer()
+tokens = tokenizer(lword)
+converted_lword = ''.join(tokens)
+print(converted_lword)

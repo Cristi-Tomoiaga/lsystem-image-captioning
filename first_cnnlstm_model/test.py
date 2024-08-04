@@ -63,6 +63,15 @@ def test(args):
     test_percentage_residue = AverageMetric()
     test_hausdorff_distance = AverageMetric()
 
+    log_loss = AverageMetric()
+    log_perplexity = AverageMetric()
+    log_bpc = AverageMetric()
+    log_percentage_correct = AverageMetric()
+    log_percentage_false_syntax = AverageMetric()
+    log_percentage_non_terminated = AverageMetric()
+    log_percentage_residue = AverageMetric()
+    log_hausdorff_distance = AverageMetric()
+
     test_loss.reset()  # investigate balancing loss with batch size
     test_perplexity.reset()
     test_bpc.reset()
@@ -78,6 +87,15 @@ def test(args):
             if dataset_version == 2:
                 test_dataloader.dataset.set_epoch(epoch)
 
+            log_loss.reset()
+            log_perplexity.reset()
+            log_bpc.reset()
+            log_percentage_correct.reset()
+            log_percentage_false_syntax.reset()
+            log_percentage_non_terminated.reset()
+            log_percentage_residue.reset()
+            log_hausdorff_distance.reset()
+
             for i, (images, captions, lengths, angles, distances) in enumerate(test_dataloader):
                 images = images.to(device)
                 captions = captions.to(device)
@@ -90,6 +108,9 @@ def test(args):
                 test_loss.add_value(loss.item())
                 test_perplexity.add_value(np.exp(loss.item()))
                 test_bpc.add_value(loss.item()/np.log(2))
+                log_loss.add_value(loss.item())
+                log_perplexity.add_value(np.exp(loss.item()))
+                log_bpc.add_value(loss.item()/np.log(2))
 
                 converted_targets = metrics.convert_padded_sequence(captions, vocab('<eos>'), vocabulary=vocab)
                 converted_outputs = metrics.convert_padded_sequence(outputs, vocab('<eos>'), vocabulary=vocab, convert_predictions=True)
@@ -100,14 +121,28 @@ def test(args):
                 test_percentage_non_terminated.add_value(percentage_non_terminated)
                 test_percentage_residue.add_value(percentage_residue)
                 test_hausdorff_distance.add_value(mean_hausdorff_distance)
+                log_percentage_correct.add_value(percentage_correct)
+                log_percentage_false_syntax.add_value(percentage_false_syntax)
+                log_percentage_non_terminated.add_value(percentage_non_terminated)
+                log_percentage_residue.add_value(percentage_residue)
+                log_hausdorff_distance.add_value(mean_hausdorff_distance)
 
                 if (i + 1) % args.log_step == 0:
                     print(f"Test - Epoch [{epoch + 1}/{num_epochs}], Step [{i + 1}/{total_batches}],"
-                          f" Average Loss: {loss.item():.4f}, Average Perplexity: {np.exp(loss.item()):5.4f},"
-                          f" Average BPC: {loss.item()/np.log(2):5.4f},"
-                          f" Average % correct: {percentage_correct:2.2f}, Average % false syntax: {percentage_false_syntax:2.2f},"
-                          f" Average % non-terminated: {percentage_non_terminated:2.2f}, Average % residue: {percentage_residue:2.2f},"
-                          f" Average Hausdorff distance: {mean_hausdorff_distance:5.4f}")
+                          f" Average Loss: {log_loss.average_value:.4f}, Average Perplexity: {log_perplexity.average_value:5.4f},"
+                          f" Average BPC: {log_bpc.average_value:5.4f},"
+                          f" Average % correct: {log_percentage_correct.average_value:2.2f}, Average % false syntax: {log_percentage_false_syntax.average_value:2.2f},"
+                          f" Average % non-terminated: {log_percentage_non_terminated.average_value:2.2f}, Average % residue: {log_percentage_residue.average_value:2.2f},"
+                          f" Average Hausdorff distance: {log_hausdorff_distance.average_value:5.4f}")
+
+                    log_loss.reset()
+                    log_perplexity.reset()
+                    log_bpc.reset()
+                    log_percentage_correct.reset()
+                    log_percentage_false_syntax.reset()
+                    log_percentage_non_terminated.reset()
+                    log_percentage_residue.reset()
+                    log_hausdorff_distance.reset()
 
             print(f"Test - Finished Epoch [{epoch + 1}/{num_epochs}]")
 

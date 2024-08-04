@@ -6,6 +6,7 @@ from torch.utils.data import Dataset
 import pandas as pd
 
 from first_cnnlstm_model.vocabulary import Vocabulary
+from first_cnnlstm_model.metrics import check_lword_syntax
 from dataset_generator.lword_renderer import LWordRenderer
 from dataset_generator.lword_preprocessor import LWordPreprocessor
 
@@ -39,8 +40,22 @@ class LSystemDataset(Dataset):
     def __len__(self):
         return len(self.__captions)
 
+    def __prepare_lword(self, lword, angle, distance):
+        converted_lword = ''.join(self.__vocabulary.tokenizer(lword))
+
+        while converted_lword != lword:
+            lword = converted_lword
+
+            if not check_lword_syntax(converted_lword, angle, distance, strict=True):
+                converted_lword = self.__renderer.fix_lword_geometrically(converted_lword, angle, distance)
+                converted_lword = LWordPreprocessor.process_lword_repeatedly(converted_lword)
+
+            converted_lword = ''.join(self.__vocabulary.tokenizer(converted_lword))
+
+        return converted_lword
+
     def __getitem__(self, idx):
-        if self.__dataset_version == 1:
+        if self.__dataset_version == 1:  # This dataset lacks the extra preprocessing from the second version
             lword = self.__captions.iloc[idx, 0]
             image_path = self.__captions.iloc[idx, 1]
             angle = self.__captions.iloc[idx, 2]
@@ -60,6 +75,7 @@ class LSystemDataset(Dataset):
 
             lword = self.__renderer.fix_lword_geometrically(lword, angle, distance)
             lword = LWordPreprocessor.process_lword_repeatedly(lword)
+            lword = self.__prepare_lword(lword, angle, distance)
 
             image = self.__renderer.render(lword, angle, distance, rescale=True)
             if self.__transform is not None:

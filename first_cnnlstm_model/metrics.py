@@ -42,7 +42,7 @@ def check_lword_syntax(lword, angle, distance, strict):
         return False
 
     if strict:
-        if not renderer.validate_lword_geometrically(lword, angle, distance):
+        if renderer.validate_lword_geometrically(lword, angle, distance):
             return False
 
         if not LWordPreprocessor.check_canceling_rotations(lword):

@@ -22,6 +22,10 @@ class Vocabulary:
 
         self.__build_vocabulary()
 
+    @property
+    def tokenizer(self):
+        return self.__tokenizer
+
     def __add_token(self, token):
         if token not in self.__token2idx:
             self.__token2idx[token] = self.__index
