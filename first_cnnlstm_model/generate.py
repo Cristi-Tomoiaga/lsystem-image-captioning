@@ -82,7 +82,7 @@ if __name__ == '__main__':
     parser.add_argument('--image_path', type=str, required=True, help='Input image path')
     parser.add_argument('--model_path', type=str, default='../models/', help='The path to the saved model')
     parser.add_argument('--mean', type=float, default=0.9947, help='The mean value of the dataset')
-    parser.add_argument('--std', type=float, default=0.0730, help='The standard deviation of the dataset')
+    parser.add_argument('--std', type=float, default=0.0729, help='The standard deviation of the dataset')
     parser.add_argument('--distance', type=float, default=100, help='The distance used for rendering')
     parser.add_argument('--angle', type=float, default=30, help='The angle used for rendering')
     parser.add_argument('--max_sequence_length', type=int, default=221, help='The maximum sequence length of the dataset')

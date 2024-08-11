@@ -49,7 +49,7 @@ vocabulary = Vocabulary()
 # print("Max sequence length ", max_sequence_length)
 
 # mean, std = utils.compute_mean_std_for_dataset("train", 2, "../generated_datasets/lsystem_dataset_v2_48267__01_08_2024_15_55")
-# max_sequence_length = utils.compute_max_sequence_length_for_dataset("train", 2, "../generated_datasets/lsystem_dataset_v2_48267__01_08_2024_15_55", 5)
+# max_sequence_length = utils.compute_max_sequence_length_for_dataset("train", 2, "../generated_datasets/lsystem_dataset_v2_48267__01_08_2024_15_55", 1)
 #
 # print("Mean, std: ", mean, std)
 # print("Mean ", mean.item())

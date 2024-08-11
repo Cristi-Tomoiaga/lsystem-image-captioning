@@ -282,7 +282,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataset_path', type=str, default='../generated_datasets/lsystem_dataset_v2_48267__01_08_2024_15_55', help='The path of the dataset')
     parser.add_argument('--dataset_version', type=int, default=2, help='The format version of the dataset')
     parser.add_argument('--mean', type=float, default=0.9947, help='The mean value of the dataset')
-    parser.add_argument('--std', type=float, default=0.0730, help='The standard deviation of the dataset')
+    parser.add_argument('--std', type=float, default=0.0729, help='The standard deviation of the dataset')
     parser.add_argument('--log_step', type=int, default=10, help='The step size for printing log info')  # 10
 
     # Model parameters                                                                      Tutorial, Alternative, Paper
