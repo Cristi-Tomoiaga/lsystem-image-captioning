@@ -10,10 +10,10 @@ class EncoderCNN(nn.Module):
 
         self.conv1 = nn.Conv2d(1, 16, kernel_size=5, stride=2)
         self.conv2 = nn.Conv2d(16, 32, kernel_size=5, stride=2)
-        # self.conv3 = nn.Conv2d(32, 64, kernel_size=5, stride=2)
+        self.conv3 = nn.Conv2d(32, 64, kernel_size=5, stride=2)
         # self.conv1 = nn.Conv2d(1, 16, kernel_size=3, stride=2, dilation=2)  # investigate, also batch norm, dropout
         # self.conv2 = nn.Conv2d(16, 32, kernel_size=3, stride=2, dilation=2)
-        self.conv3 = nn.Conv2d(32, 64, kernel_size=3, stride=2, dilation=2)
+        # self.conv3 = nn.Conv2d(32, 64, kernel_size=3, stride=2, dilation=2)
 
         self.max_pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
         self.max_pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
@@ -21,12 +21,13 @@ class EncoderCNN(nn.Module):
 
         self.flatten = nn.Flatten()
         self.linear = nn.Linear(64 * 7 * 7, feature_size)
+        self.bn = nn.BatchNorm1d(feature_size, momentum=0.01)
 
     def forward(self, images):
         c1 = self.max_pool1(F.relu(self.conv1(images)))  # (batch_size, 16, 127, 127)
         c2 = self.max_pool2(F.relu(self.conv2(c1)))  # (batch_size, 32, 31, 31)
         c3 = self.max_pool3(F.relu(self.conv3(c2)))  # (batch_size, 64, 7, 7)
-        features = self.linear(self.flatten(c3))  # (batch_size, feature_size)
+        features = self.bn(self.linear(self.flatten(c3)))  # (batch_size, feature_size)
 
         return features
 
