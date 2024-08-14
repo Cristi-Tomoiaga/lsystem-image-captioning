@@ -14,6 +14,7 @@ from dataset_generator.lword_renderer import LWordRenderer
 
 def load_image(image_path, transform=None):
     image = Image.open(image_path)
+    image = image.convert('L')
     image = image.resize((512, 512), Image.Resampling.LANCZOS)
 
     if transform is not None:
