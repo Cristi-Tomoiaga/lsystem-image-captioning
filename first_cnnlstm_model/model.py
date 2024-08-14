@@ -11,7 +11,7 @@ class EncoderCNN(nn.Module):
         self.conv1 = nn.Conv2d(1, 16, kernel_size=5, stride=2)
         self.conv2 = nn.Conv2d(16, 32, kernel_size=5, stride=2)
         self.conv3 = nn.Conv2d(32, 64, kernel_size=5, stride=2)
-        # self.conv1 = nn.Conv2d(1, 16, kernel_size=3, stride=2, dilation=2)  # investigate, also batch norm, dropout
+        # self.conv1 = nn.Conv2d(1, 16, kernel_size=3, stride=2, dilation=2)
         # self.conv2 = nn.Conv2d(16, 32, kernel_size=3, stride=2, dilation=2)
         # self.conv3 = nn.Conv2d(32, 64, kernel_size=3, stride=2, dilation=2)
 
@@ -21,13 +21,14 @@ class EncoderCNN(nn.Module):
 
         self.flatten = nn.Flatten()
         self.linear = nn.Linear(64 * 7 * 7, feature_size)
-        self.bn = nn.BatchNorm1d(feature_size, momentum=0.01)
+        # self.bn = nn.BatchNorm1d(feature_size, momentum=0.01)
+        self.dropout = nn.Dropout(0.5)
 
     def forward(self, images):
         c1 = self.max_pool1(F.relu(self.conv1(images)))  # (batch_size, 16, 127, 127)
         c2 = self.max_pool2(F.relu(self.conv2(c1)))  # (batch_size, 32, 31, 31)
         c3 = self.max_pool3(F.relu(self.conv3(c2)))  # (batch_size, 64, 7, 7)
-        features = self.bn(self.linear(self.flatten(c3)))  # (batch_size, feature_size)
+        features = self.dropout(self.linear(self.flatten(c3)))  # (batch_size, feature_size)
 
         return features
 
@@ -40,8 +41,10 @@ class DecoderRNN(nn.Module):
         self.lstm = nn.LSTM(embed_size, hidden_size, batch_first=True)
         self.linear = nn.Linear(hidden_size, vocab_size)
 
+        self.dropout = nn.Dropout(0.5)
+
     def forward(self, features, captions, lengths):
-        embeddings = self.embed(captions)  # (batch_size, max_target_length, embed_size)
+        embeddings = self.dropout(self.embed(captions))  # (batch_size, max_target_length, embed_size)
         embeddings = torch.cat((features.unsqueeze(1), embeddings), dim=1)  # (batch_size, max_target_length+1, embed_size)
         # cuts off the <end> token because the features are the first token now
         packed_embeddings = pack_padded_sequence(embeddings, lengths, batch_first=True)  # (*, embed_size)

@@ -33,7 +33,7 @@ def train(args):
             os.makedirs(args.tb_path)
         os.mkdir(runs_path)
 
-    transform = transforms.Compose([  # Investigate RandomCrop, RandomHorizontalFlip?
+    transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize((args.mean,), (args.std,))
     ])
