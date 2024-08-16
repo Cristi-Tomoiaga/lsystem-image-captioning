@@ -9,13 +9,13 @@ from torchvision import transforms
 # import torch.nn.utils.rnn as rnn_utils
 
 # import second_cnnlstm_model.lsystem_dataloaders as lsystem_dataloaders
-from second_cnnlstm_model.lsystem_dataset import LSystemDataset
+# from second_cnnlstm_model.lsystem_dataset import LSystemDataset
 from second_cnnlstm_model.vocabulary import Vocabulary, LWordTokenizer
 from second_cnnlstm_model.model import EncoderCNN, DecoderRNN
 import second_cnnlstm_model.utils as utils
-import second_cnnlstm_model.metrics as metrics
-from dataset_generator.lword_renderer import LWordRenderer
-from dataset_generator.lword_preprocessor import LWordPreprocessor
+# import second_cnnlstm_model.metrics as metrics
+# from dataset_generator.lword_renderer import LWordRenderer
+# from dataset_generator.lword_preprocessor import LWordPreprocessor
 
 transform = transforms.Compose([
     transforms.ToTensor(),
@@ -167,20 +167,20 @@ utils.count_parameters(decoder)
 # image1.close()
 # image2.close()
 
-lword = '<bos>F[-F+F+F[-F-F][+F-F]][+F-F[-F[-F+F][+F]][+F-F[-F][+F]]]<eos>'
-angle = 31.97050666809082
-distance = 100.0
-renderer = LWordRenderer(512, 512)
-lword = lword.replace('<bos>', '').replace('<eos>', '')
-print(metrics.check_lword_syntax(lword, angle, distance, strict=True))
-
-print(lword)
-lword = renderer.fix_lword_geometrically(lword.replace('<bos>', '').replace('<eos>', ''), angle, distance)
-print(lword)
-lword = LWordPreprocessor.process_lword_repeatedly(lword)
-print(lword)
-
-print(metrics.check_lword_syntax(lword, angle, distance, strict=True))
+# lword = '<bos>F[-F+F+F[-F-F][+F-F]][+F-F[-F[-F+F][+F]][+F-F[-F][+F]]]<eos>'
+# angle = 31.97050666809082
+# distance = 100.0
+# renderer = LWordRenderer(512, 512)
+# lword = lword.replace('<bos>', '').replace('<eos>', '')
+# print(metrics.check_lword_syntax(lword, angle, distance, strict=True))
+#
+# print(lword)
+# lword = renderer.fix_lword_geometrically(lword.replace('<bos>', '').replace('<eos>', ''), angle, distance)
+# print(lword)
+# lword = LWordPreprocessor.process_lword_repeatedly(lword)
+# print(lword)
+#
+# print(metrics.check_lword_syntax(lword, angle, distance, strict=True))
 # image = renderer.render(lword, angle, distance, rescale=True)
 # image.save('test.png')
 
@@ -194,38 +194,38 @@ print(metrics.check_lword_syntax(lword, angle, distance, strict=True))
 # image = renderer.render('F[-F+F+F-F-F+F+F][+F-F-F[-F[-F-F[-F][+F]][+F[-F-F][+F+F]]][+[-F][+F[-F-F][+F+F]]]]', angle, distance, rescale=True)
 # image.save('test4.png')
 
-dataset_v2 = LSystemDataset("test", 2, "../generated_datasets/lsystem_dataset_v2_48267__01_08_2024_15_55", vocabulary, transform)
-for epoch in range(1):
-    dataset_v2.set_epoch(epoch)
-
-    for image, target, angle, distance in dataset_v2:
-        lword = vocabulary.convert_to_lword(target.long().numpy())
-        lword = lword.replace('<bos>', '').replace('<eos>', '')
-        result = metrics.check_lword_syntax(lword, angle, distance, strict=True)
-
-        if not result:
-            print('Entered')
-            while not metrics.check_lword_syntax(lword, angle, distance, strict=True):
-                lword = renderer.fix_lword_geometrically(lword, angle, distance)
-                lword = LWordPreprocessor.process_lword_repeatedly(lword)
-
-            result2 = metrics.check_lword_syntax(lword, angle, distance, strict=True)
-            if not result2:
-                print('Not')
-            else:
-                print('Fixed')
-
-    print(epoch)
-
-
-lword = '<bos>F[-F+F+F[-F-F][+F-F]][+F-F[-F[-F+F+][++F]][+F-F-[[-F][+F]]]]<eos>'.replace('<bos>', '').replace('<eos>', '')
-print(lword)
-
-tokens = vocabulary.convert_from_lword(lword)
-converted_lword = vocabulary.convert_to_lword(tokens).replace('<bos>', '').replace('<eos>', '')
-print(converted_lword)
-
-tokenizer = LWordTokenizer()
-tokens = tokenizer(lword)
-converted_lword = ''.join(tokens)
-print(converted_lword)
+# dataset_v2 = LSystemDataset("test", 2, "../generated_datasets/lsystem_dataset_v2_48267__01_08_2024_15_55", vocabulary, transform)
+# for epoch in range(1):
+#     dataset_v2.set_epoch(epoch)
+#
+#     for image, target, angle, distance in dataset_v2:
+#         lword = vocabulary.convert_to_lword(target.long().numpy())
+#         lword = lword.replace('<bos>', '').replace('<eos>', '')
+#         result = metrics.check_lword_syntax(lword, angle, distance, strict=True)
+#
+#         if not result:
+#             print('Entered')
+#             while not metrics.check_lword_syntax(lword, angle, distance, strict=True):
+#                 lword = renderer.fix_lword_geometrically(lword, angle, distance)
+#                 lword = LWordPreprocessor.process_lword_repeatedly(lword)
+#
+#             result2 = metrics.check_lword_syntax(lword, angle, distance, strict=True)
+#             if not result2:
+#                 print('Not')
+#             else:
+#                 print('Fixed')
+#
+#     print(epoch)
+#
+#
+# lword = '<bos>F[-F+F+F[-F-F][+F-F]][+F-F[-F[-F+F+][++F]][+F-F-[[-F][+F]]]]<eos>'.replace('<bos>', '').replace('<eos>', '')
+# print(lword)
+#
+# tokens = vocabulary.convert_from_lword(lword)
+# converted_lword = vocabulary.convert_to_lword(tokens).replace('<bos>', '').replace('<eos>', '')
+# print(converted_lword)
+#
+# tokenizer = LWordTokenizer()
+# tokens = tokenizer(lword)
+# converted_lword = ''.join(tokens)
+# print(converted_lword)

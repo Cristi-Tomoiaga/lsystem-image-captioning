@@ -127,10 +127,11 @@ def train(args):
         for i, (images, captions, lengths, angles, distances) in enumerate(train_dataloader):
             images = images.to(device)
             captions = captions.to(device)
-            targets = pack_padded_sequence(captions, lengths, batch_first=True)[0]
+            lengths = [x - 1 for x in lengths]
+            targets = pack_padded_sequence(captions[:, 1:], lengths, batch_first=True)[0]
 
             features = encoder(images)
-            outputs = decoder(features, captions, lengths)
+            outputs = decoder(features, captions[:, :-1], lengths)
 
             loss = loss_fn(outputs, targets)
             encoder.zero_grad()
@@ -203,14 +204,14 @@ def train(args):
                 max_sequence_length = captions.size()[-1]
 
                 features = encoder(images)
-                outputs = decoder.generate_caption(features, max_sequence_length, return_idx=False)
+                outputs = decoder.generate_caption(features, max_sequence_length-1, bos_token=vocab('<bos>'), return_idx=False)
 
-                loss = valid_loss_fn(outputs.view(-1, outputs.size(dim=-1)), captions.view(-1))
+                loss = valid_loss_fn(outputs.view(-1, outputs.size(dim=-1)), captions[:, 1:].reshape(-1))
                 valid_loss.add_value(loss.item())
                 valid_perplexity.add_value(np.exp(loss.item()))
                 valid_bpc.add_value(loss.item()/np.log(2))
 
-                converted_targets = metrics.convert_padded_sequence(captions, vocab('<eos>'), vocabulary=vocab)
+                converted_targets = metrics.convert_padded_sequence(captions[:, 1:], vocab('<eos>'), vocabulary=vocab)
                 converted_outputs = metrics.convert_padded_sequence(outputs, vocab('<eos>'), vocabulary=vocab, convert_predictions=True)
                 percentage_correct, percentage_false_syntax, percentage_non_terminated, percentage_residue = metrics.compute_correctness_metrics(converted_outputs, converted_targets, angles, distances, strict=True)
                 mean_hausdorff_distance = metrics.compute_hausdorff_metric(converted_outputs, converted_targets, angles, distances, normalize=False)

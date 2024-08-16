@@ -102,9 +102,9 @@ def test(args):
                 max_sequence_length = captions.size()[-1]
 
                 features = encoder(images)
-                outputs = decoder.generate_caption(features, max_sequence_length, return_idx=False)
+                outputs = decoder.generate_caption(features, max_sequence_length-1, bos_token=vocab('<bos>'), return_idx=False)
 
-                loss = test_loss_fn(outputs.view(-1, outputs.size(dim=-1)), captions.view(-1))
+                loss = test_loss_fn(outputs.view(-1, outputs.size(dim=-1)), captions[:, 1:].reshape(-1))
                 test_loss.add_value(loss.item())
                 test_perplexity.add_value(np.exp(loss.item()))
                 test_bpc.add_value(loss.item()/np.log(2))
@@ -112,7 +112,7 @@ def test(args):
                 log_perplexity.add_value(np.exp(loss.item()))
                 log_bpc.add_value(loss.item()/np.log(2))
 
-                converted_targets = metrics.convert_padded_sequence(captions, vocab('<eos>'), vocabulary=vocab)
+                converted_targets = metrics.convert_padded_sequence(captions[:, 1:], vocab('<eos>'), vocabulary=vocab)
                 converted_outputs = metrics.convert_padded_sequence(outputs, vocab('<eos>'), vocabulary=vocab, convert_predictions=True)
                 percentage_correct, percentage_false_syntax, percentage_non_terminated, percentage_residue = metrics.compute_correctness_metrics(converted_outputs, converted_targets, angles, distances, strict=True)
                 mean_hausdorff_distance = metrics.compute_hausdorff_metric(converted_outputs, converted_targets, angles, distances, normalize=False)

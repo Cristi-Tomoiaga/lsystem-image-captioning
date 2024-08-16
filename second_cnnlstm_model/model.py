@@ -38,25 +38,27 @@ class DecoderRNN(nn.Module):
         super(DecoderRNN, self).__init__()
 
         self.embed = nn.Embedding(vocab_size, embed_size)
-        self.lstm = nn.LSTM(embed_size, hidden_size, batch_first=True)
+        self.lstm = nn.LSTM(2 * embed_size, hidden_size, batch_first=True)
         self.linear = nn.Linear(hidden_size, vocab_size)
 
         # self.dropout = nn.Dropout(0.2)
 
     def forward(self, features, captions, lengths):
         embeddings = self.embed(captions)  # (batch_size, max_target_length, embed_size)
-        embeddings = torch.cat((features.unsqueeze(1), embeddings), dim=1)  # (batch_size, max_target_length+1, embed_size)
-        # cuts off the <end> token because the features are the first token now
-        packed_embeddings = pack_padded_sequence(embeddings, lengths, batch_first=True)  # (*, embed_size)
+        embeddings = torch.cat((embeddings, features.unsqueeze(1).expand(-1, embeddings.size(1), -1)), dim=-1)  # (batch_size, max_target_length, 2*embed_size)
+
+        packed_embeddings = pack_padded_sequence(embeddings, lengths, batch_first=True)  # (*, 2*embed_size)
 
         hiddens, _ = self.lstm(packed_embeddings)  # (*, hidden_size)
         outputs = self.linear(hiddens[0])  # (*, vocab_size)
 
         return outputs
 
-    def generate_caption(self, features, max_sequence_length, return_idx=True):
+    def generate_caption(self, features, max_sequence_length, bos_token, return_idx=True):
         generated_idx = []
-        inputs = features.unsqueeze(1)  # (batch_size, 1, feature_size)
+        bos_token = torch.tensor([bos_token]).unsqueeze(0).expand(features.size(0), -1)  # (batch_size, 1)
+        bos_token_embedding = self.embed(bos_token)  # (batch_size, 1, embed_size)
+        inputs = torch.cat((bos_token_embedding, features.unsqueeze(1)), dim=-1)  # (batch_size, 1, 2*embed_size)
         states = None
 
         for _ in range(max_sequence_length):
@@ -67,7 +69,7 @@ class DecoderRNN(nn.Module):
             generated_idx.append(predicted_idx if return_idx else outputs)
 
             inputs = self.embed(predicted_idx)  # (batch_size, embed_size)
-            inputs = inputs.unsqueeze(1)  # (batch_size, 1, embed_size)
+            inputs = torch.cat((inputs.unsqueeze(1), features.unsqueeze(1)), dim=-1)  # (batch_size, 1, 2*embed_size)
 
         generated_idx = torch.stack(generated_idx, dim=1)  # (batch_size, max_sequence_length) or (batch_size, max_sequence_length, vocab_size)
 
