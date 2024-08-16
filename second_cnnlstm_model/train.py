@@ -9,12 +9,12 @@ from torch.nn.utils.rnn import pack_padded_sequence
 from torch.utils.tensorboard import SummaryWriter
 from torchvision import transforms
 
-import first_cnnlstm_model.utils as utils
-from first_cnnlstm_model.lsystem_dataloaders import get_train_loader, get_valid_loader
-from first_cnnlstm_model.model import EncoderCNN, DecoderRNN
-from first_cnnlstm_model.vocabulary import Vocabulary
-from first_cnnlstm_model.metrics import AverageMetric
-import first_cnnlstm_model.metrics as metrics
+import second_cnnlstm_model.utils as utils
+from second_cnnlstm_model.lsystem_dataloaders import get_train_loader, get_valid_loader
+from second_cnnlstm_model.model import EncoderCNN, DecoderRNN
+from second_cnnlstm_model.vocabulary import Vocabulary
+from second_cnnlstm_model.metrics import AverageMetric
+import second_cnnlstm_model.metrics as metrics
 
 
 def train(args):
