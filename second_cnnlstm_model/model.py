@@ -56,7 +56,7 @@ class DecoderRNN(nn.Module):
 
     def generate_caption(self, features, max_sequence_length, bos_token, return_idx=True):
         generated_idx = []
-        bos_token = torch.tensor([bos_token]).unsqueeze(0).expand(features.size(0), -1)  # (batch_size, 1)
+        bos_token = bos_token.unsqueeze(0).expand(features.size(0), -1)  # (batch_size, 1)
         bos_token_embedding = self.embed(bos_token)  # (batch_size, 1, embed_size)
         inputs = torch.cat((bos_token_embedding, features.unsqueeze(1)), dim=-1)  # (batch_size, 1, 2*embed_size)
         states = None

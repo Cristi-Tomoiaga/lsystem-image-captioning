@@ -54,7 +54,7 @@ def generate(image_path, model_path, embed_size, hidden_size, mean, std, max_seq
 
     with torch.no_grad():
         features = encoder(image)
-        generated_idx = decoder.generate_caption(features, max_sequence_length-1, bos_token=vocab('<bos>'))  # (1, max_sequence_length-1)
+        generated_idx = decoder.generate_caption(features, max_sequence_length-1, bos_token=torch.tensor([vocab('<bos>')]).to(device))  # (1, max_sequence_length-1)
         lword = '<bos>' + vocab.convert_to_lword(generated_idx[0].cpu().numpy())  # (max_sequence_length)
 
     return lword

@@ -204,7 +204,7 @@ def train(args):
                 max_sequence_length = captions.size()[-1]
 
                 features = encoder(images)
-                outputs = decoder.generate_caption(features, max_sequence_length-1, bos_token=vocab('<bos>'), return_idx=False)
+                outputs = decoder.generate_caption(features, max_sequence_length-1, bos_token=torch.tensor([vocab('<bos>')]).to(device), return_idx=False)
 
                 loss = valid_loss_fn(outputs.view(-1, outputs.size(dim=-1)), captions[:, 1:].reshape(-1))
                 valid_loss.add_value(loss.item())
